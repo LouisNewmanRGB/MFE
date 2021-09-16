@@ -46,6 +46,10 @@ class Simulation():
     def run(self, seed=None, calcData = False):
         #calcData determines whether intermediate positions will be stored in memory
         
+        #reset
+        self.diplacements = None
+        self.ditances = None
+        
         nPart = len(self.particles)
         if seed !=None:
             random.seed(seed)
@@ -63,13 +67,6 @@ class Simulation():
                     self.positions[p,n,:] = particle.getPos()
                     self.truePositions[p,n,:] = particle.getTruePos()
                 self.nextStep(particle)
-                
-        if calcData:
-            self.positions = self.positions.transpose(1, 0, 2)
-            self.truePositions = self.truePositions.transpose(1, 0, 2)
-            
-        self.calcDisplacements()
-        self.calcDistances()
     
     def nextStep(self, particle):
         t = 0 #elapsed time during the step
@@ -116,9 +113,9 @@ class Simulation():
             data = self.positions
         
         for p in range(nPart):
-            xArray = data[:, p, 0]
-            yArray = data[:, p, 1]
-            zArray = data[:, p, 2]
+            xArray = data[p, :, 0]
+            yArray = data[p, :, 1]
+            zArray = data[p, :, 2]
             ax.scatter(xArray, yArray, zArray, color = colors[p])
             ax.plot(xArray, yArray, zArray, color = colors[p])
         
@@ -127,12 +124,21 @@ class Simulation():
         ax.set_zlabel('Z')
         plt.show()
         
-    def calcDisplacements(self):
-        endPos = np.array([particle.getTruePos() for particle in self.particles])
-        self.displacements = endPos - self.startingPositions
-        
-    def calcDistances(self):
-        self.distances = np.array([np.linalg.norm(disp) for disp in self.displacements])
+    def getStepLengths(self):
+        nPart = len(self.particles)
+        stepLengths = np.zeros((nPart, self.nStep-1))
+        for p in range(nPart):
+            steps = self.truePositions[p,1:,:] - self.truePositions[p,:-1,:]
+            stepLengths[p,:] = [np.linalg.norm(step) for step in steps]
+        return stepLengths
         
     def getDistances(self):
+        if type(self.distances) != np.array:
+            self.distances = np.array([np.linalg.norm(disp) for disp in self.getDisplacements()])
         return self.distances
+        
+    def getDisplacements(self):
+        if type(self.displacements) != np.array:
+            endPos = np.array([particle.getTruePos() for particle in self.particles])
+            self.displacements = endPos - self.startingPositions
+        return self.displacements
