@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import math
+import cmath
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm #color map
 
@@ -21,12 +22,13 @@ class Simulation():
         #for results
         self.displacements = None
         self.distances = None
-        self.posStepIndices = None
-        self.truePosStepIndices = None
+        self.signal = None
         
         #for trajectory plotting
         self.positions = None
         self.truePositions = None
+        self.posStepIndices = None
+        self.truePosStepIndices = None
         
     def getTimeStep(self):
         return self.timeStep
@@ -166,3 +168,12 @@ class Simulation():
             endPos = np.array([particle.getTruePos() for particle in self.particles])
             self.displacements = endPos - self.startingPositions
         return self.displacements
+
+    def getSGPSignal(self, gamma, G, delta):
+        if self.signal == None:
+            nPart = len(self.particles)
+            res = 0
+            for p in range(nPart):
+                res += cmath.exp(1j*gamma*delta*np.dot(self.getDisplacements()[p], G))*self.particles[p].getSignal()
+            self.signal = res/nPart
+        return self.signal

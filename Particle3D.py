@@ -41,3 +41,6 @@ class Particle3D(Abstract3DObject):
 
    def changeSpeed(self, newSpeed):
        self.velocity = newSpeed*self.velocity/self.getSpeed()
+
+   def getSignal(self):
+       return self.signal

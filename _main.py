@@ -19,6 +19,8 @@ plt.hist(sim.getDistances())
 print(np.average(sim.getDisplacements(), axis=0))
 print(np.average(np.power(sim.getDistances(), 2))) #mean squared distance
 print(6*D*nStep*timeStep) #theoretical mean squared distance
+
+print(sim.getSGPSignal(1, np.array([1, 1, 1]), 1))
 plt.show()
 """
 nStep = 10
