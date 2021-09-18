@@ -4,9 +4,12 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm #color map
 
+from Util import Util
+
 class Simulation():
-    TIME_TOL = 1e-10
-    
+    TIME_TOL = 1e-10 #TODO: improve
+    REL_SPACE_TOL = 1e-10
+
     def __init__(self, nStep, timeStep, particles, environment, compartments=[]):
         self.particles = particles
         self.environment = environment
@@ -18,6 +21,8 @@ class Simulation():
         #for results
         self.displacements = None
         self.distances = None
+        self.posStepIndices = None
+        self.truePosStepIndices = None
         
         #for trajectory plotting
         self.positions = None
@@ -32,16 +37,10 @@ class Simulation():
     def getTruePositions(self):
         return self.truePositions
         
-    def getRandomDirection(self):
-        theta = random.random() * 2*math.pi
-        phi = random.random() * math.pi
-        return np.array([math.sin(phi) * math.cos(theta), math.sin(phi) * math.sin(theta), math.cos(phi)])
-        
     def findCompartment(self, particle):
         for compartment in self.compartments:
             if compartment.contains(particle):
                 return compartment
-                break
     
     def run(self, seed=None, calcData = False):
         #calcData determines whether intermediate positions will be stored in memory
@@ -54,23 +53,27 @@ class Simulation():
         if seed !=None:
             random.seed(seed)
         if calcData:
-            self.positions = np.zeros((nPart,self.nStep,3))
-            self.truePositions = np.zeros((nPart,self.nStep,3))
-        
+            self.positions = [[] for i in range(nPart)]#np.zeros((nPart,self.nStep,3))
+            self.truePositions = [[] for i in range(nPart)]#np.zeros((nPart,self.nStep,3))
+            self.posStepIndices = [[] for i in range(nPart)] #list of indices of "steps" for every particle
+            self.truePosStepIndices = [[] for i in range(nPart)]
         for p in range(nPart):
             particle = self.particles[p]
-            particle.setVelocity(self.getRandomDirection())
+            particle.setVelocity(Util.getRandomDirection())
             newComp = self.findCompartment(particle)
             particle.changeCompartment(newComp, self.timeStep)
+            if calcData:
+                self.positions[p].append(particle.getPos().copy())
+                self.truePositions[p].append(particle.getTruePos().copy())
+                self.posStepIndices[p].append(0)
+                self.truePosStepIndices[p].append(0)
             for n in range(self.nStep):
-                if calcData:
-                    self.positions[p,n,:] = particle.getPos()
-                    self.truePositions[p,n,:] = particle.getTruePos()
-                self.nextStep(particle)
+                self.nextStep(p, calcData)
     
-    def nextStep(self, particle):
+    def nextStep(self, particleIndex, calcData):
+        particle = self.particles[particleIndex]
         t = 0 #elapsed time during the step
-        particle.setVelocity(particle.getSpeed()*self.getRandomDirection()) #random direction at each step
+        particle.setVelocity(particle.getSpeed()*Util.getRandomDirection()) #random direction at each step
         
         while t < self.timeStep:
             nComp = len(self.compartments)
@@ -84,14 +87,24 @@ class Simulation():
                     reachTimes[c] = math.inf 
             firstIndex = np.argmin(reachTimes)
             reachTime, compartment = reachTimes[firstIndex], self.compartments[firstIndex]
-            
+
             if t + reachTime < self.timeStep:
                 # if there is an intersection
+                particle.move(reachTime)
+                preCollidePos = particle.getPos().copy()
                 compartment.collide(particle, intersections[firstIndex], reachTime, self)
                 t += reachTime
+                if calcData and (preCollidePos != particle.getPos()).any():
+                    self.positions[particleIndex].append(preCollidePos)
             else:
                 particle.move(self.timeStep - t)
                 t = self.timeStep
+            if calcData:
+                self.positions[particleIndex].append(particle.getPos().copy())
+                self.truePositions[particleIndex].append(particle.getTruePos().copy())
+        if calcData:
+            self.posStepIndices[particleIndex].append(len(self.positions[particleIndex]) - 1)
+            self.truePosStepIndices[particleIndex].append(len(self.truePositions[particleIndex]) - 1)
         
     def plot(self, positionType = True):
         #3D plot of trajectories
@@ -103,6 +116,11 @@ class Simulation():
         
         if positionType:
             data = self.truePositions
+            indices = self.truePosStepIndices
+            superMax = Util.recursiveMax(data)
+            ax.set_xlim3d([-superMax, superMax])
+            ax.set_ylim3d([-superMax, superMax])
+            ax.set_zlim3d([-superMax, superMax])
         else:
             ax.set_xlim3d([self.environment.getPos()[0] - self.environment.getSize()[0]/2,
                             self.environment.getPos()[0] + self.environment.getSize()[0]/2])
@@ -111,14 +129,15 @@ class Simulation():
             ax.set_zlim3d([self.environment.getPos()[2] - self.environment.getSize()[2]/2,
                             self.environment.getPos()[2] + self.environment.getSize()[2]/2])
             data = self.positions
-        
+            indices = self.posStepIndices
+
         for p in range(nPart):
-            xArray = data[p, :, 0]
-            yArray = data[p, :, 1]
-            zArray = data[p, :, 2]
-            ax.scatter(xArray, yArray, zArray, color = colors[p])
-            ax.plot(xArray, yArray, zArray, color = colors[p])
-        
+            Util.plotPoints(data[p], ax.plot, colors[p])
+            Util.plotPoints([data[p][i] for i in range(len(data[p])) if i in indices[p]], ax.scatter, colors[p])
+
+        for compartment in self.compartments:
+            compartment.plot(ax)
+
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
@@ -126,10 +145,15 @@ class Simulation():
         
     def getStepLengths(self):
         nPart = len(self.particles)
-        stepLengths = np.zeros((nPart, self.nStep-1))
+        stepLengths = [[] for i in range(nPart)]
         for p in range(nPart):
-            steps = self.truePositions[p,1:,:] - self.truePositions[p,:-1,:]
-            stepLengths[p,:] = [np.linalg.norm(step) for step in steps]
+            posList = self.truePositions[p]
+            d = 0
+            for s in range(1,len(posList)):
+                d += np.linalg.norm(posList[s] - posList[s-1])
+                if s in self.truePosStepIndices[p]:
+                    stepLengths[p].append(d)
+                    d = 0
         return stepLengths
         
     def getDistances(self):

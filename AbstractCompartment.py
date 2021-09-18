@@ -22,6 +22,11 @@ class AbstractCompartment(Abstract3DObject):
        #collide with a particle at position intersection and time reachTime in simulation sim
        pass
 
+    @abc.abstractmethod
+    def plot(self, ax):
+       #plot compartment on matplotlib 3D axes ax
+       pass
+
     def getT2(self):
         return self.T2
 
