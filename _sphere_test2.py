@@ -7,14 +7,19 @@ from Simulation import Simulation
 from Sphere import Sphere
 
 nStep = 10
-timeStep = 1
-D = 1
-part = [Particle3D(0.,0.,0.) for i in range(2)]
-envi = Environment(0, 0, 0, 1, D, 5, 5, 5)
-compartments = [Sphere(0,0,0,2,0.5*D,2)]
-sim = Simulation(10, 1, part, envi, compartments)
+timeStep = 0.1 #ms
+D = 2e-3/1000 #mm2/ms
+l = (6*D*timeStep)**0.5
+envSize = 10*l
+T2 = 1 #irrelevant
+perm = 0.034/1000 #mm/ms
 
-sim.run(seed=1, calcData = True)
+envi = Environment(0, 0, 0, T2, D, envSize, envSize, envSize)
+part = [Particle3D(0.,0.,0.) for i in range(2)]
+compartments = [Sphere(0,0,0,T2,2*D, perm, 2*l)]
+sim = Simulation(nStep, timeStep, part, envi, compartments)
+
+sim.run(seed=None, calcData = True)
 
 sim.plot(False)
 sim.plot(True)

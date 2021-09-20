@@ -7,8 +7,9 @@ from Util import Util
 from Particle3D import Particle3D
 
 class Sphere(AbstractCompartment):
-    def __init__(self, x, y, z, T2, diffusivity, radius):
+    def __init__(self, x, y, z, T2, diffusivity, permeability, radius):
         super(Sphere, self).__init__(x, y, z, T2, diffusivity)
+        self.permeability = permeability
         self.radius = radius
 
     def findIntersection(self, particle):
@@ -26,6 +27,8 @@ class Sphere(AbstractCompartment):
     def collide(self, particle, intersection, reachTime, sim):
         #TODO##############
         outsideComp = sim.findCompartment(Particle3D(*intersection + (intersection - self.pos)*Simulation.REL_SPACE_TOL))
+        throughProbability = 4 * self.permeability / particle.getSpeed()
+        #print(throughProbability)
         probability = 0.5
         #TODO##############
         if random.random() < probability:

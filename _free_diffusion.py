@@ -8,8 +8,9 @@ from Environment import Environment
 from Simulation import Simulation
 from Util import Util
 
-def runSim(i, diffusionTime):
+def runSim(i, t):
     n = nStep[i]
+    diffusionTime = diffusionTimes[t]
     timeStep = diffusionTime / n
     nPart = int(totalSteps / n)
     l = (6*D*timeStep)**0.5
@@ -18,6 +19,15 @@ def runSim(i, diffusionTime):
     part = [Particle3D(Util.getRandomU(envSize),Util.getRandomU(envSize),Util.getRandomU(envSize)) for i in range(nPart)]
     sim = Simulation(n, timeStep, part, env)
     sim.run(seed=None, calcData=False)
+
+    #kolmogorov-smirnov
+    test = scipy.stats.kstest(sim.getDistances(), trueCDF)
+    print("{diffusionTime}ms diffusion time ({t}/{totDt}), {nPart} particles and {n} steps ({i}/{totStep}):"
+    .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, n=n, i=i+1, totStep=len(nStep)))
+    print("Kolmogorov-Smirnov test Statistic:", test.statistic)
+    print("Kolmogorov-Smirnov test pvalue:", test.pvalue, "\n")
+    errors[t, i] = test.statistic
+    pvalues[t, i] = test.pvalue
 
     #histograms
     bw = 2*scipy.stats.iqr(sim.getDistances(), rng=(25, 75))/(len(sim.getDistances()))**(1/3)
@@ -32,23 +42,18 @@ def runSim(i, diffusionTime):
               .format(diffusionTime=diffusionTime, nPart=nPart, n=n, totalSteps=totalSteps))
     plt.show()
 
-    #kolmogorov-smirnov
-    test = scipy.stats.kstest(sim.getDistances(), trueCDF)
-    print("k-s p-value:", test.pvalue)
-    print("k-s statistic:", test.statistic)
-    errors[t, i] = test.statistic
-
     #numbers
     #print("numer:", np.average(np.power(sim.getDistances(), 2)))
     #print("theor:", 6*D*diffusionTime)
 
-diffusionTimes = [1, 10, 100] #ms
-totalSteps = 1e5
+diffusionTimes = [1, 20, 100] #ms
+totalSteps = int(1e5)
 nStep = [2, 4, 8, 16, 32, 50, 100, 250, 500, 1000] #dividers of 100 000
 D = 2e-3/1000 #mm2/ms
 T2 = 1 #irrelevant for this test
 
-errors = np.zeros((len(diffusionTimes), len(nStep)))#[None] * len(nStep)
+errors = np.zeros((len(diffusionTimes), len(nStep)))
+pvalues = np.zeros((len(diffusionTimes), len(nStep)))
 
 for t in range(len(diffusionTimes)):
     diffusionTime = diffusionTimes[t]
@@ -58,9 +63,11 @@ for t in range(len(diffusionTimes)):
     points = np.linspace(0, 4 * (6 * D * diffusionTime)**0.5, 500)
     distribPoints = truePDF(points)
     for i in range(len(nStep)):
-        runSim(i, diffusionTime)
+        runSim(i, t)
 
 #final plot
+print("ERRORS:", errors)
+print("PVALUES:", pvalues)
 colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
 for t in range(len(diffusionTimes)):
     plt.scatter(nStep, errors[t,:], color = colors[t])
