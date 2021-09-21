@@ -7,9 +7,9 @@ from Util import Util
 from Particle3D import Particle3D
 
 class Ellipsoid(AbstractCompartment):
-    def __init__(self, x, y, z, T2, diffusivity, permeability, a, b, c):
+    def __init__(self, x, y, z, T2, diffusivity, probInOut, a, b, c):
         super(Ellipsoid, self).__init__(x, y, z, T2, diffusivity)
-        self.permeability = permeability
+        self.probInOut = probInOut
         if type(a) != np.ndarray:
             self.R = np.diag([a, b, c])
         else:
@@ -17,7 +17,6 @@ class Ellipsoid(AbstractCompartment):
             self.R[:,0], self.R[:,1], self.R[:,2] = a, b, c
         self.invR = np.linalg.inv(self.R)
         self.A = np.matmul(np.transpose(self.invR), self.invR) #parameter in quadratic form
-        print(self.R)
 
     def findIntersection(self, particle):
         ray = np.array([particle.getPos() + particle.getVelocity()*Simulation.TIME_TOL, particle.getVelocity()/particle.getSpeed()])
@@ -32,19 +31,21 @@ class Ellipsoid(AbstractCompartment):
                 return ray[0] + tList[1] * ray[1]
         return None
 
-    def collide(self, particle, intersection, reachTime, sim):
-        #TODO##############
-        outsideComp = sim.findCompartment(Particle3D(*intersection + (intersection - self.pos)*Simulation.REL_SPACE_TOL))
-        throughProbability = 4 * self.permeability / particle.getSpeed()
-        #print(throughProbability)
-        probability = 0.5
-        #TODO##############
-        if random.random() < probability:
+    def collide(self, particle, oldPos, intersection, sim):
+        otherSideComp = sim.findCompartment(Particle3D(*intersection + particle.getVelocity()*Simulation.TIME_TOL))
+        if otherSideComp.contains(Particle3D(*oldPos)):
+            #the particle is leaving a compartment
+            probability = self.probInOut
+        else:
+            #the particle is entering a compartment
+            probability = self.probInOut * (self.diffusivity/particle.getCompartment().getDiffusivity())**0.5
+        if random.random() > probability:
+            #deflection
             normal = 2*np.matmul(self.A, intersection - self.pos)
             normal = normal/np.linalg.norm(normal)
             particle.setVelocity(particle.getVelocity() - 2*normal*np.dot(normal, particle.getVelocity()))
         else:
-            particle.changeCompartment(outsideComp, sim.getTimeStep())
+            particle.changeCompartment(otherSideComp, sim.getTimeStep())
 
     def contains(self, particle):
         return np.linalg.norm(np.matmul(self.invR, particle.getPos() - self.pos)) < 1

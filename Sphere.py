@@ -7,9 +7,9 @@ from Util import Util
 from Particle3D import Particle3D
 
 class Sphere(AbstractCompartment):
-    def __init__(self, x, y, z, T2, diffusivity, permeability, radius):
+    def __init__(self, x, y, z, T2, diffusivity, probInOut, radius):
         super(Sphere, self).__init__(x, y, z, T2, diffusivity)
-        self.permeability = permeability
+        self.probInOut = probInOut
         self.radius = radius
 
     def findIntersection(self, particle):
@@ -24,19 +24,21 @@ class Sphere(AbstractCompartment):
                 return ray[0] + tList[1] * ray[1]
         return None
 
-    def collide(self, particle, intersection, reachTime, sim):
-        #TODO##############
-        outsideComp = sim.findCompartment(Particle3D(*intersection + (intersection - self.pos)*Simulation.REL_SPACE_TOL))
-        throughProbability = 4 * self.permeability / particle.getSpeed()
-        #print(throughProbability)
-        probability = 0.5
-        #TODO##############
-        if random.random() < probability:
+    def collide(self, particle, oldPos, intersection, sim):
+        otherSideComp = sim.findCompartment(Particle3D(*intersection + particle.getVelocity()*Simulation.TIME_TOL))
+        if otherSideComp.contains(Particle3D(*oldPos)):
+            #the particle is leaving a compartment
+            probability = self.probInOut
+        else:
+            #the particle is entering a compartment
+            probability = self.probInOut * (self.diffusivity/particle.getCompartment().getDiffusivity())**0.5
+        if random.random() > probability:
+            #deflection
             normal = (intersection - self.pos)
-            normal = (normal/np.linalg.norm(normal))
+            normal = normal/np.linalg.norm(normal)
             particle.setVelocity(particle.getVelocity() - 2*normal*np.dot(normal, particle.getVelocity()))
         else:
-            particle.changeCompartment(outsideComp, sim.getTimeStep())
+            particle.changeCompartment(otherSideComp, sim.getTimeStep())
 
     def contains(self, particle):
         return np.linalg.norm(particle.getPos() - self.pos) < self.radius

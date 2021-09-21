@@ -18,7 +18,7 @@ class AbstractCompartment(Abstract3DObject):
        pass
 
     @abc.abstractmethod
-    def collide(self, particle, intersection, reachTime, sim):
+    def collide(self, particle, oldPos, intersection, sim):
        #collide with a particle at position intersection and time reachTime in simulation sim
        pass
 

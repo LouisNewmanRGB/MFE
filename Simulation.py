@@ -8,8 +8,7 @@ import matplotlib.cm as cm #color map
 from Util import Util
 
 class Simulation():
-    TIME_TOL = 1e-10 #TODO: improve
-    REL_SPACE_TOL = 1e-10
+    TIME_TOL = 1e-5 #TODO: improve
 
     def __init__(self, nStep, timeStep, particles, environment, compartments=[]):
         self.particles = particles
@@ -50,6 +49,7 @@ class Simulation():
         #reset
         self.diplacements = None
         self.ditances = None
+        self.signal = None
         
         nPart = len(self.particles)
         if seed !=None:
@@ -92,9 +92,10 @@ class Simulation():
 
             if t + reachTime < self.timeStep:
                 # if there is an intersection
+                oldPos = particle.getPos().copy()
                 particle.move(reachTime)
                 preCollidePos = particle.getPos().copy()
-                compartment.collide(particle, intersections[firstIndex], reachTime, self)
+                compartment.collide(particle, oldPos, intersections[firstIndex], self)
                 t += reachTime
                 if calcData and (preCollidePos != particle.getPos()).any():
                     self.positions[particleIndex].append(preCollidePos)

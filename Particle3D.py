@@ -27,6 +27,9 @@ class Particle3D(Abstract3DObject):
        self.compartment = compartment
        self.changeSpeed((6*self.compartment.getDiffusivity()/timeStep)**0.5)
 
+   def getCompartment(self):
+        return self.compartment
+
    def getTruePos(self):
         return self.truePos
 

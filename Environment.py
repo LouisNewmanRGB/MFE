@@ -14,7 +14,7 @@ class Environment(AbstractCompartment):
         boundingBox = np.array([self.pos - self.size/2, self.pos + self.size/2])
         return gt.ray_intersect_aabb(ray, boundingBox)
 
-    def collide(self, particle, intersection, reachTime, sim):
+    def collide(self, particle, oldPos, intersection, sim):
         line = intersection + particle.getVelocity()*Simulation.TIME_TOL
         newPos = intersection.copy()
         for i in range(3):
