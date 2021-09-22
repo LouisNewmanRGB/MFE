@@ -4,6 +4,7 @@ import math
 import cmath
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm #color map
+import time
 
 from Util import Util
 
@@ -59,6 +60,8 @@ class Simulation():
             self.truePositions = [[] for i in range(nPart)]#np.zeros((nPart,self.nStep,3))
             self.posStepIndices = [[] for i in range(nPart)] #list of indices of "steps" for every particle
             self.truePosStepIndices = [[] for i in range(nPart)]
+
+        startTime = time.time()
         for p in range(nPart):
             particle = self.particles[p]
             particle.setVelocity(Util.getRandomDirection())
@@ -71,6 +74,7 @@ class Simulation():
                 self.truePosStepIndices[p].append(0)
             for n in range(self.nStep):
                 self.nextStep(p, calcData)
+            print("Particle {p}/{nPart}\n{time}s\n".format(p=p+1, nPart=nPart, time=time.time() - startTime))
     
     def nextStep(self, particleIndex, calcData):
         particle = self.particles[particleIndex]
