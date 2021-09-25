@@ -13,8 +13,8 @@ class AbstractCompartment(Abstract3DObject):
        pass
 
     @abc.abstractmethod
-    def findIntersection(self, particle):
-       #cast a ray and find a possible intersection between particle and compartment
+    def findIntersection(self, ray, maxDistance):
+       #cast a ray and find a possible intersection between ray and compartment
        pass
 
     @abc.abstractmethod

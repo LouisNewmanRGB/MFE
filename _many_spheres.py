@@ -21,7 +21,7 @@ for timeStep in timeSteps:
     l = (6*D*timeStep)**0.5
     print("Time step = {timeStep}ms\nl = {l}um\n".format(timeStep=timeStep, l=l))
 
-timeStep = timeSteps[0]
+timeStep = timeSteps[1]
 print(timeStep)
 
 nSpheresLine = int((5000)**(1/3))

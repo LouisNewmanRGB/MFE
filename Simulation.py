@@ -15,6 +15,7 @@ class Simulation():
         self.particles = particles
         self.environment = environment
         self.compartments = compartments + [environment]
+        self.nComp = len(self.compartments)
         self.nStep = nStep
         self.timeStep = timeStep
         self.startingPositions = np.array([particle.getTruePos() for particle in particles])
@@ -74,7 +75,8 @@ class Simulation():
                 self.truePosStepIndices[p].append(0)
             for n in range(self.nStep):
                 self.nextStep(p, calcData)
-            print("Particle {p}/{nPart}\n{time}s\n".format(p=p+1, nPart=nPart, time=time.time() - startTime))
+            if (p+1)%10 == 0:
+                print("Particle {p}/{nPart}\n{time}s\n".format(p=p+1, nPart=nPart, time=time.time() - startTime))
     
     def nextStep(self, particleIndex, calcData):
         particle = self.particles[particleIndex]
@@ -82,15 +84,16 @@ class Simulation():
         particle.setVelocity(particle.getSpeed()*Util.getRandomDirection()) #random direction at each step
         
         while t < self.timeStep:
-            nComp = len(self.compartments)
-            intersections = np.array([None]*nComp)
-            reachTimes = np.array([None]*nComp)
-            for c in range(nComp):
-                intersections[c] = self.compartments[c].findIntersection(particle)
+            intersections = np.array([None]*self.nComp)
+            reachTimes = np.array([None]*self.nComp)
+            ray = np.array([particle.getPos() + particle.getVelocity()*Simulation.TIME_TOL, particle.getVelocity()/particle.getSpeed()])
+            maxDistance = particle.getSpeed()*t
+            for c in range(self.nComp):
+                intersections[c] = self.compartments[c].findIntersection(ray, maxDistance)
                 if type(intersections[c]) == np.ndarray:
                     reachTimes[c] = np.linalg.norm(intersections[c] - particle.getPos())/particle.getSpeed()
                 else:
-                    reachTimes[c] = math.inf 
+                    reachTimes[c] = math.inf
             firstIndex = np.argmin(reachTimes)
             reachTime, compartment = reachTimes[firstIndex], self.compartments[firstIndex]
 

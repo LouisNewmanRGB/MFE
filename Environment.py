@@ -9,8 +9,7 @@ class Environment(AbstractCompartment):
         super(Environment, self).__init__(x, y, z, T2, diffusivity)
         self.size = np.array([sizeX, sizeY, sizeZ])
 
-    def findIntersection(self, particle):
-        ray = np.array([particle.getPos() + particle.getVelocity()*Simulation.TIME_TOL, particle.getVelocity()])
+    def findIntersection(self, ray, maxDistance):
         boundingBox = np.array([self.pos - self.size/2, self.pos + self.size/2])
         return gt.ray_intersect_aabb(ray, boundingBox)
 

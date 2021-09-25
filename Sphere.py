@@ -12,16 +12,16 @@ class Sphere(AbstractCompartment):
         self.probInOut = probInOut
         self.radius = radius
 
-    def findIntersection(self, particle):
-        ray = np.array([particle.getPos() + particle.getVelocity()*Simulation.TIME_TOL, particle.getVelocity()/particle.getSpeed()])
-        L = self.pos - ray[0]
-        tList = Util.rootsReal([1, -2*np.dot(ray[1], L), np.linalg.norm(L)**2 - self.radius**2])
-        if len(tList) > 0:
-            tList = np.sort(tList)
-            if tList[0] > 0:
-                return ray[0] + tList[0] * ray[1]
-            elif len(tList) == 2 and tList[1] > 0:
-                return ray[0] + tList[1] * ray[1]
+    def findIntersection(self, ray, maxDistance):
+        if np.linalg.norm(ray[0] - self.pos) - self.radius <= maxDistance:
+            L = self.pos - ray[0]
+            tList = Util.rootsReal([1, -2*np.dot(ray[1], L), np.linalg.norm(L)**2 - self.radius**2])
+            if len(tList) > 0:
+                tList = np.sort(tList)
+                if tList[0] > 0:
+                    return ray[0] + tList[0] * ray[1]
+                elif len(tList) == 2 and tList[1] > 0:
+                    return ray[0] + tList[1] * ray[1]
         return None
 
     def collide(self, particle, oldPos, intersection, sim):

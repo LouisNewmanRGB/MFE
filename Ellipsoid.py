@@ -15,20 +15,21 @@ class Ellipsoid(AbstractCompartment):
         else:
             self.R = np.zeros((3,3))
             self.R[:,0], self.R[:,1], self.R[:,2] = a, b, c
+        self.maxRadius = np.max([np.linalg.norm(a), np.linalg.norm(b), np.linalg.norm(c)])
         self.invR = np.linalg.inv(self.R)
         self.A = np.matmul(np.transpose(self.invR), self.invR) #parameter in quadratic form
 
-    def findIntersection(self, particle):
-        ray = np.array([particle.getPos() + particle.getVelocity()*Simulation.TIME_TOL, particle.getVelocity()/particle.getSpeed()])
-        L = np.matmul(self.invR,(self.pos - ray[0]))
-        invRD = np.matmul(self.invR,ray[1])
-        tList = Util.rootsReal([np.linalg.norm(invRD)**2, -2*np.dot(invRD, L), np.linalg.norm(L)**2 - 1])
-        if len(tList) > 0:
-            tList = np.sort(tList)
-            if tList[0] > 0:
-                return ray[0] + tList[0] * ray[1]
-            elif len(tList) == 2 and tList[1] > 0:
-                return ray[0] + tList[1] * ray[1]
+    def findIntersection(self, ray, maxDistance):
+        if np.linalg.norm(ray[0] - self.pos) - self.maxRadius <= maxDistance:
+            L = np.matmul(self.invR,(self.pos - ray[0]))
+            invRD = np.matmul(self.invR,ray[1])
+            tList = Util.rootsReal([np.linalg.norm(invRD)**2, -2*np.dot(invRD, L), np.linalg.norm(L)**2 - 1])
+            if len(tList) > 0:
+                tList = np.sort(tList)
+                if tList[0] > 0:
+                    return ray[0] + tList[0] * ray[1]
+                elif len(tList) == 2 and tList[1] > 0:
+                    return ray[0] + tList[1] * ray[1]
         return None
 
     def collide(self, particle, oldPos, intersection, sim):
