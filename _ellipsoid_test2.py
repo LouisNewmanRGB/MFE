@@ -16,7 +16,7 @@ T2 = 1 #irrelevant
 #perm = 0.034/1000 #mm/ms
 probInOut = 0.5
 
-envi = Environment(0, 0, 0, T2, D, envSize, envSize, envSize)
+envi = Environment(T2, D, envSize, envSize, envSize)
 part = [Particle3D(0.,0.,0.) for i in range(2)]
 #compartments = []
 compartments = [Sphere(0,0,0,T2,2*D, probInOut, 2*l), Ellipsoid(0, 0, 0, T2, 2*D, probInOut, 2*l, 3*l, 1*l)]

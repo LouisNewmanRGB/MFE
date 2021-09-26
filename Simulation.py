@@ -19,6 +19,9 @@ class Simulation():
         self.nStep = nStep
         self.timeStep = timeStep
         self.startingPositions = np.array([particle.getTruePos() for particle in particles])
+
+        self.reachTimes = np.array([None]*self.nComp)
+        self.intersections = np.array([None]*self.nComp)
         
         #for results
         self.displacements = None
@@ -82,27 +85,24 @@ class Simulation():
         particle = self.particles[particleIndex]
         t = 0 #elapsed time during the step
         particle.setVelocity(particle.getSpeed()*Util.getRandomDirection()) #random direction at each step
-        
         while t < self.timeStep:
-            intersections = np.array([None]*self.nComp)
-            reachTimes = np.array([None]*self.nComp)
+            #old definitions went here
             ray = np.array([particle.getPos() + particle.getVelocity()*Simulation.TIME_TOL, particle.getVelocity()/particle.getSpeed()])
-            maxDistance = particle.getSpeed()*t
             for c in range(self.nComp):
-                intersections[c] = self.compartments[c].findIntersection(ray, maxDistance)
-                if type(intersections[c]) == np.ndarray:
-                    reachTimes[c] = np.linalg.norm(intersections[c] - particle.getPos())/particle.getSpeed()
+                self.intersections[c] = self.compartments[c].findIntersection(ray, particle.getSpeed()*(self.timeStep - t))
+                if type(self.intersections[c]) == np.ndarray:
+                    self.reachTimes[c] = np.linalg.norm(self.intersections[c] - particle.getPos())/particle.getSpeed()
                 else:
-                    reachTimes[c] = math.inf
-            firstIndex = np.argmin(reachTimes)
-            reachTime, compartment = reachTimes[firstIndex], self.compartments[firstIndex]
-
+                    self.reachTimes[c] = math.inf
+            firstIndex = np.argmin(self.reachTimes)
+            reachTime, compartment = self.reachTimes[firstIndex], self.compartments[firstIndex]
+            
             if t + reachTime < self.timeStep:
                 # if there is an intersection
                 oldPos = particle.getPos().copy()
                 particle.move(reachTime)
                 preCollidePos = particle.getPos().copy()
-                compartment.collide(particle, oldPos, intersections[firstIndex], self)
+                compartment.collide(particle, oldPos, self.intersections[firstIndex], self)
                 t += reachTime
                 if calcData and (preCollidePos != particle.getPos()).any():
                     self.positions[particleIndex].append(preCollidePos)
@@ -115,7 +115,7 @@ class Simulation():
         if calcData:
             self.posStepIndices[particleIndex].append(len(self.positions[particleIndex]) - 1)
             self.truePosStepIndices[particleIndex].append(len(self.truePositions[particleIndex]) - 1)
-        
+
     def plot(self, positionType = True):
         #3D plot of trajectories
         #positionType represents whether to plot "true" or "in cell" positions
@@ -132,12 +132,9 @@ class Simulation():
             ax.set_ylim3d([-superMax, superMax])
             ax.set_zlim3d([-superMax, superMax])
         else:
-            ax.set_xlim3d([self.environment.getPos()[0] - self.environment.getSize()[0]/2,
-                            self.environment.getPos()[0] + self.environment.getSize()[0]/2])
-            ax.set_ylim3d([self.environment.getPos()[1] - self.environment.getSize()[1]/2,
-                            self.environment.getPos()[1] + self.environment.getSize()[1]/2])
-            ax.set_zlim3d([self.environment.getPos()[2] - self.environment.getSize()[2]/2,
-                            self.environment.getPos()[2] + self.environment.getSize()[2]/2])
+            ax.set_xlim3d([self.environment.getSize()[0]/2, -self.environment.getSize()[0]/2])
+            ax.set_ylim3d([self.environment.getSize()[1]/2, -self.environment.getSize()[1]/2])
+            ax.set_zlim3d([self.environment.getSize()[2]/2, -self.environment.getSize()[2]/2])
             data = self.positions
             indices = self.posStepIndices
 

@@ -41,7 +41,7 @@ for x in positions:
     for y in positions:
         for z in positions:
             compartments.append(Sphere(x, y, z, T2, D, probInOut, radius))
-env = Environment(0, 0, 0, T2, D, voxelDim, voxelDim, voxelDim)
+env = Environment(T2, D, voxelDim, voxelDim, voxelDim)
 particles = [Particle3D(Util.getRandomU(voxelDim),Util.getRandomU(voxelDim),Util.getRandomU(voxelDim)) for i in range(nPart)]
 sim = Simulation(nStep, timeStep, particles, env, compartments)
 sim.run(seed=1, calcData=False)

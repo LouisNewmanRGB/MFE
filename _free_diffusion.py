@@ -2,20 +2,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import scipy.stats
+import time
 
 from Particle3D import Particle3D
 from Environment import Environment
 from Simulation import Simulation
 from Util import Util
 
-def runSim(i, t):
+def runSim(i, t, plotHist):
+    startTime = time.time()
     n = nStep[i]
     diffusionTime = diffusionTimes[t]
     timeStep = diffusionTime / n
     nPart = int(totalSteps / n)
     l = (6*D*timeStep)**0.5
     envSize = 10*l
-    env = Environment(0, 0, 0, T2, D, envSize, envSize, envSize)
+    env = Environment(T2, D, envSize, envSize, envSize)
     part = [Particle3D(Util.getRandomU(envSize),Util.getRandomU(envSize),Util.getRandomU(envSize)) for i in range(nPart)]
     sim = Simulation(n, timeStep, part, env)
     sim.run(seed=None, calcData=False)
@@ -24,23 +26,25 @@ def runSim(i, t):
     test = scipy.stats.kstest(sim.getDistances(), trueCDF)
     print("{diffusionTime}ms diffusion time ({t}/{totDt}), {nPart} particles and {n} steps ({i}/{totStep}):"
     .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, n=n, i=i+1, totStep=len(nStep)))
+    print("Computation time: {compTime}s".format(compTime = time.time() - startTime))
     print("Kolmogorov-Smirnov test Statistic:", test.statistic)
     print("Kolmogorov-Smirnov test pvalue:", test.pvalue, "\n")
     errors[t, i] = test.statistic
     pvalues[t, i] = test.pvalue
 
     #histograms
-    bw = 2*scipy.stats.iqr(sim.getDistances(), rng=(25, 75))/(len(sim.getDistances()))**(1/3)
-    nBins = int((np.max(sim.getDistances()) - np.min(sim.getDistances()))/bw)
-    plt.hist(sim.getDistances(), bins=nBins, density = True, stacked=True)
-    plt.plot(points, distribPoints, color = 'red')
-    plt.legend(["Expected probability density function", "Random walk results histogram"])
-    plt.xlabel("Distance travelled [mm]")
-    plt.ylabel("[mm-1]")
-    plt.title("Probability distribution of the distance travelled by a particle\n"
-              "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}, ({totalSteps} particles x steps)"
-              .format(diffusionTime=diffusionTime, nPart=nPart, n=n, totalSteps=totalSteps))
-    plt.show()
+    if plotHist:
+        bw = 2*scipy.stats.iqr(sim.getDistances(), rng=(25, 75))/(len(sim.getDistances()))**(1/3)
+        nBins = int((np.max(sim.getDistances()) - np.min(sim.getDistances()))/bw)
+        plt.hist(sim.getDistances(), bins=nBins, density = True, stacked=True)
+        plt.plot(points, distribPoints, color = 'red')
+        plt.legend(["Expected probability density function", "Random walk results histogram"])
+        plt.xlabel("Distance travelled [mm]")
+        plt.ylabel("[mm-1]")
+        plt.title("Probability distribution of the distance travelled by a particle\n"
+                  "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}, ({totalSteps} particles x steps)"
+                  .format(diffusionTime=diffusionTime, nPart=nPart, n=n, totalSteps=totalSteps))
+        plt.show()
 
     #numbers
     #print("numer:", np.average(np.power(sim.getDistances(), 2)))
@@ -63,7 +67,9 @@ for t in range(len(diffusionTimes)):
     points = np.linspace(0, 4 * (6 * D * diffusionTime)**0.5, 500)
     distribPoints = truePDF(points)
     for i in range(len(nStep)):
-        runSim(i, t)
+        tim = time.time()
+        runSim(i, t, False)
+        #print("time:", time.time() - tim)
 
 #final plot
 print("ERRORS:", errors)

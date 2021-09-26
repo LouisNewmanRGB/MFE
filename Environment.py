@@ -5,22 +5,23 @@ from AbstractCompartment import AbstractCompartment
 from Simulation import Simulation
 
 class Environment(AbstractCompartment):
-    def __init__(self, x, y, z, T2, diffusivity, sizeX, sizeY, sizeZ):
-        super(Environment, self).__init__(x, y, z, T2, diffusivity)
+    def __init__(self, T2, diffusivity, sizeX, sizeY, sizeZ):
+        super(Environment, self).__init__(None, None, None, T2, diffusivity)
         self.size = np.array([sizeX, sizeY, sizeZ])
+        self.aabb = np.array([-self.size/2, self.size/2])
 
     def findIntersection(self, ray, maxDistance):
-        boundingBox = np.array([self.pos - self.size/2, self.pos + self.size/2])
-        return gt.ray_intersect_aabb(ray, boundingBox)
+        #if (ray[0] >= self.size/2 - maxDistance).any() or (ray[0] <= self.size/2 + maxDistance).any():
+        return gt.ray_intersect_aabb(ray, self.aabb)
 
     def collide(self, particle, oldPos, intersection, sim):
         line = intersection + particle.getVelocity()*Simulation.TIME_TOL
         newPos = intersection.copy()
         for i in range(3):
-            if line[i] > self.pos[i] + self.size[i]/2:
-                newPos[i] = self.pos[i] - self.size[i]/2
-            elif line[i] < self.pos[i] - self.size[i]/2:
-                newPos[i] = self.pos[i] + self.size[i]/2
+            if line[i] > self.size[i]/2:
+                newPos[i] = -self.size[i]/2
+            elif line[i] < -self.size[i]/2:
+                newPos[i] = self.size[i]/2
         particle.setPos(newPos)
         newComp = sim.findCompartment(particle)
         particle.changeCompartment(newComp, sim.getTimeStep())
