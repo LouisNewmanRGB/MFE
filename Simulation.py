@@ -78,8 +78,8 @@ class Simulation():
                 self.truePosStepIndices[p].append(0)
             for n in range(self.nStep):
                 self.nextStep(p, calcData)
-            if (p+1)%10 == 0:
-                print("Particle {p}/{nPart}\n{time}s\n".format(p=p+1, nPart=nPart, time=time.time() - startTime))
+            #if (p+1)%10 == 0:
+            #    print("Particle {p}/{nPart}\n{time}s\n".format(p=p+1, nPart=nPart, time=time.time() - startTime))
     
     def nextStep(self, particleIndex, calcData):
         particle = self.particles[particleIndex]
