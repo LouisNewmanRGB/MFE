@@ -39,3 +39,51 @@ class Util():
         def F(x):
             return scipy.stats.maxwell.cdf(x, loc = 0, scale = (2*D*diffusionTime)**0.5)
         return F
+
+    def genAlphaList(nTerms, nIter, a):
+        """positive roots (solving for alpha) of a*alpha = tan(a*alpha)"""
+        alphaList = [(2*k + 1)*np.pi/2 for k in range(nTerms)]
+        for j in range(nIter):
+            for k in range(nTerms):
+                alphaList[k] = np.arctan(alphaList[k]) + k*np.pi
+        return (np.array(alphaList)/a)[1:]
+
+    def getPDF_sphere(D, diffusionTime, radius, nTerms, nIter):
+        alphaList = Util.genAlphaList(nTerms, nIter, radius)
+
+        def f(r):
+            if r < radius:
+                return 3*r**2/(radius**3) + \
+                   2*r*np.sum([np.exp(-D*diffusionTime*alpha**2)*np.sin(alpha*r)*alpha/(np.sin(alpha*radius)**2) for alpha in alphaList])/radius
+            return 0
+        return f
+
+    def getCDF_sphere(D, diffusionTime, radius, nTerms, nIter):
+        alphaList = Util.genAlphaList(nTerms, nIter, radius)
+
+        def F(r):
+
+            return np.heaviside(r - radius, 0) + np.heaviside(radius - r, 1)*( (r/radius)**3 + \
+                        2*np.sum([np.exp(-D*diffusionTime*alpha**2)* \
+                                  (np.sin(alpha*r) - alpha*r*np.cos(alpha*r))/(alpha*np.sin(alpha*radius)**2) for alpha in alphaList], axis=0)/radius )
+            """
+            if type(r) == np.ndarray:
+                res = np.ones(len(r))
+                for i in range(len(r)):
+                    #res[i] = F(r[i])
+                    if r[i] < radius:
+                        res[i] = (r[i]/radius)**3 + \
+                            2*np.sum([np.exp(-D*diffusionTime*alpha**2)* \
+                                      (np.sin(alpha*r[i]) - alpha*r[i]*np.cos(alpha*r[i]))/(alpha*np.sin(alpha*radius)**2) for alpha in alphaList])/radius
+                    else:
+                        res[i] = 1
+                return res
+            else:
+                if r < radius:
+                    return (r/radius)**3 + \
+                        2*np.sum([np.exp(-D*diffusionTime*alpha**2)* \
+                                  (np.sin(alpha*r) - alpha*r*np.cos(alpha*r))/(alpha*np.sin(alpha*radius)**2) for alpha in alphaList])/radius
+                else:
+                    return 1
+            """
+        return F

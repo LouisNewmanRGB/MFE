@@ -7,6 +7,7 @@ import time
 from Particle3D import Particle3D
 from Environment import Environment
 from Simulation import Simulation
+from Sphere import Sphere
 from Util import Util
 
 def runSim(i, t, plotHist):
@@ -16,10 +17,11 @@ def runSim(i, t, plotHist):
     timeStep = diffusionTime / n
     nPart = int(totalSteps / n)
     l = (6*D*timeStep)**0.5
-    envSize = 10*l
+    envSize = 5*radius
     env = Environment(T2, D, envSize, envSize, envSize)
-    part = [Particle3D(Util.getRandomU(envSize),Util.getRandomU(envSize),Util.getRandomU(envSize)) for i in range(nPart)]
-    sim = Simulation(n, timeStep, part, env)
+    part = [Particle3D(0, 0, 0) for i in range(nPart)]
+    sim = Simulation(n, timeStep, part, env, [Sphere(0, 0, 0, T2, D, 0, radius)])
+    #sim = Simulation(n, timeStep, part, env)
     sim.run(seed=None, calcData=False)
 
     #kolmogorov-smirnov
@@ -50,11 +52,11 @@ def runSim(i, t, plotHist):
     #print("numer:", np.average(np.power(sim.getDistances(), 2)))
     #print("theor:", 6*D*diffusionTime)
 
-diffusionTimes = [1, 20, 100] #ms
+diffusionTimes = [2, 3, 10] #ms
 totalSteps = int(1e5)
-#nStep = [2, 4, 8, 16, 32, 50, 100, 250, 500, 1000] #dividers of 100 000
-nStep = [5, 6, 7, 8, 9, 10, 11, 12, 16, 20]
-D = 2e-3/1000 #mm2/ms
+nStep = [2, 4, 8, 16, 32, 50, 100, 250, 500, 1000] #dividers of 100 000
+D = 2 #um2/ms
+radius = 8 #um
 T2 = 1 #irrelevant for this test
 
 errors = np.zeros((len(diffusionTimes), len(nStep)))
@@ -62,14 +64,14 @@ pvalues = np.zeros((len(diffusionTimes), len(nStep)))
 
 for t in range(len(diffusionTimes)):
     diffusionTime = diffusionTimes[t]
-    truePDF = Util.getPDF(D, diffusionTime)
-    trueCDF = Util.getCDF(D, diffusionTime)
+    truePDF = Util.getPDF_sphere(D, diffusionTime, radius, 500, 5)
+    trueCDF = Util.getCDF_sphere(D, diffusionTime, radius, 500, 5)
 
-    points = np.linspace(0, 4 * (6 * D * diffusionTime)**0.5, 500)
-    distribPoints = truePDF(points)
+    points = np.linspace(0, 1.1*radius, 500)
+    distribPoints = [truePDF(p) for p in points]
     for i in range(len(nStep)):
         tim = time.time()
-        runSim(i, t, False)
+        runSim(i, t, True)
         #print("time:", time.time() - tim)
 
 #final plot

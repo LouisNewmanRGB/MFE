@@ -6,18 +6,19 @@ from Environment import Environment
 from Simulation import Simulation
 from Sphere import Sphere
 
-nStep = 10
-timeStep = 0.1 #ms
-D = 2e-3*1e6*1e-3 #D = 2e-3/1000 #mm2/s
+nStep = 2000
+timeStep = 10/nStep #ms
+D = 2 #um2/ms
 l = (6*D*timeStep)**0.5
-envSize = 5*l
+radius = 8 #um
+envSize = 5*radius
 T2 = 1 #irrelevant
 #perm = 0.034/1000 #mm/ms
-probInOut = 0.5
+probInOut = 0
 
 envi = Environment(T2, D, envSize, envSize, envSize)
 part = [Particle3D(0.,0.,0.) for i in range(2)]
-compartments = [Sphere(0,0,0,T2,2*D, probInOut, 2*l)]
+compartments = [Sphere(0,0,0,T2,2*D, probInOut, radius)]
 sim = Simulation(nStep, timeStep, part, envi, compartments)
 
 sim.run(seed=None, calcData = True)

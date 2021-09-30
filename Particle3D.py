@@ -5,14 +5,14 @@ from Abstract3DObject import Abstract3DObject
 
 class Particle3D(Abstract3DObject):
    def __init__(self, x, y, z, vx, vy, vz):
-       super(Particle3D, self).__init__(x, y, z)
+       super(Particle3D, self).__init__(float(x), float(y), float(z))
        self.truePos = self.pos.copy() #position without wrap-around effect
        self.velocity = np.array([vx, vy, vz])
        self.compartment = None
        self.signal = 1
 
    def __init__(self, x, y, z):
-       super(Particle3D, self).__init__(x, y, z)
+       super(Particle3D, self).__init__(float(x), float(y), float(z))
        self.truePos = self.pos.copy() #position without wrap-around effect
        self.velocity = None
        self.compartment = None

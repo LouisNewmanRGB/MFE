@@ -87,7 +87,7 @@ class Simulation():
         particle.setVelocity(particle.getSpeed()*Util.getRandomDirection()) #random direction at each step
         while t < self.timeStep:
             #old definitions went here
-            ray = np.array([particle.getPos() + particle.getVelocity()*Simulation.TIME_TOL, particle.getVelocity()/particle.getSpeed()])
+            ray = np.array([particle.getPos(), particle.getVelocity()/particle.getSpeed()])
             for c in range(self.nComp):
                 self.intersections[c] = self.compartments[c].findIntersection(ray, particle.getSpeed()*(self.timeStep - t))
                 if type(self.intersections[c]) == np.ndarray:
