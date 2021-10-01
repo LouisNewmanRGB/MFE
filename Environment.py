@@ -8,6 +8,7 @@ class Environment(AbstractCompartment):
     def __init__(self, T2, diffusivity, sizeX, sizeY, sizeZ):
         super(Environment, self).__init__(None, None, None, T2, diffusivity)
         self.size = np.array([sizeX, sizeY, sizeZ])
+        self.tolerance = self.size*Simulation.TOL
         self.aabb = np.array([-self.size/2, self.size/2])
 
     def findIntersection(self, ray, maxDistance):
@@ -15,7 +16,7 @@ class Environment(AbstractCompartment):
         return gt.ray_intersect_aabb(ray, self.aabb)
 
     def collide(self, particle, oldPos, intersection, sim):
-        line = intersection + particle.getVelocity()*Simulation.TIME_TOL
+        line = intersection + particle.getVelocity()/particle.getSpeed()*self.tolerance
         newPos = intersection.copy()
         for i in range(3):
             if line[i] > self.size[i]/2:

@@ -9,17 +9,20 @@ import time
 from Util import Util
 
 class Simulation():
-    TIME_TOL = 1e-5 #TODO: improve
+    TOL = 1e-5 #relative tolerance
 
     def __init__(self, nStep, timeStep, particles, environment, compartments=[]):
         self.particles = particles
+        self.nPart = len(self.particles)
         self.environment = environment
         self.compartments = compartments + [environment]
         self.nComp = len(self.compartments)
         self.nStep = nStep
         self.timeStep = timeStep
+        self.timeTolerance = self.timeStep*Simulation.TOL #time used for particles to move right after collision
         self.startingPositions = np.array([particle.getTruePos() for particle in particles])
 
+        #for calculations at each iteration
         self.reachTimes = np.array([None]*self.nComp)
         self.intersections = np.array([None]*self.nComp)
         
@@ -31,6 +34,7 @@ class Simulation():
         #for trajectory plotting
         self.positions = None
         self.truePositions = None
+        self.dataCompartments = None
         self.posStepIndices = None
         self.truePosStepIndices = None
         
@@ -43,30 +47,30 @@ class Simulation():
     def getTruePositions(self):
         return self.truePositions
         
-    def findCompartment(self, particle):
+    def findCompartment(self, particle, excludedComp = None):
         for compartment in self.compartments:
-            if compartment.contains(particle):
+            if compartment != excludedComp and compartment.contains(particle):
                 return compartment
     
-    def run(self, seed=None, calcData = False):
+    def run(self, seed=None, calcData = False, partPrintNumber = None):
         #calcData determines whether intermediate positions will be stored in memory
         
         #reset
         self.diplacements = None
         self.ditances = None
         self.signal = None
-        
-        nPart = len(self.particles)
+        if calcData:
+            self.positions = [[] for i in range(self.nPart)]
+            self.truePositions = [[] for i in range(self.nPart)]
+            self.dataCompartments = [[] for i in range(self.nPart)]
+            self.posStepIndices = [[] for i in range(self.nPart)]
+            self.truePosStepIndices = [[] for i in range(self.nPart)]
+
         if seed !=None:
             random.seed(seed)
-        if calcData:
-            self.positions = [[] for i in range(nPart)]#np.zeros((nPart,self.nStep,3))
-            self.truePositions = [[] for i in range(nPart)]#np.zeros((nPart,self.nStep,3))
-            self.posStepIndices = [[] for i in range(nPart)] #list of indices of "steps" for every particle
-            self.truePosStepIndices = [[] for i in range(nPart)]
 
         startTime = time.time()
-        for p in range(nPart):
+        for p in range(self.nPart):
             particle = self.particles[p]
             particle.setVelocity(Util.getRandomDirection())
             newComp = self.findCompartment(particle)
@@ -74,19 +78,19 @@ class Simulation():
             if calcData:
                 self.positions[p].append(particle.getPos().copy())
                 self.truePositions[p].append(particle.getTruePos().copy())
+                self.dataCompartments[p].append(particle.getCompartment())
                 self.posStepIndices[p].append(0)
                 self.truePosStepIndices[p].append(0)
             for n in range(self.nStep):
                 self.nextStep(p, calcData)
-            #if (p+1)%10 == 0:
-            #    print("Particle {p}/{nPart}\n{time}s\n".format(p=p+1, nPart=nPart, time=time.time() - startTime))
+            if partPrintNumber != None and (p+1)%partPrintNumber == 0:
+                print("Particle {p}/{nPart}\n{time}s\n".format(p=p+1, nPart=self.nPart, time=time.time() - startTime))
     
     def nextStep(self, particleIndex, calcData):
         particle = self.particles[particleIndex]
         t = 0 #elapsed time during the step
         particle.setVelocity(particle.getSpeed()*Util.getRandomDirection()) #random direction at each step
         while t < self.timeStep:
-            #old definitions went here
             ray = np.array([particle.getPos(), particle.getVelocity()/particle.getSpeed()])
             for c in range(self.nComp):
                 self.intersections[c] = self.compartments[c].findIntersection(ray, particle.getSpeed()*(self.timeStep - t))
@@ -97,15 +101,16 @@ class Simulation():
             firstIndex = np.argmin(self.reachTimes)
             reachTime, compartment = self.reachTimes[firstIndex], self.compartments[firstIndex]
             
-            if t + reachTime < self.timeStep:
+            if t + reachTime + self.timeTolerance < self.timeStep:
                 # if there is an intersection
                 oldPos = particle.getPos().copy()
                 particle.move(reachTime)
                 preCollidePos = particle.getPos().copy()
                 compartment.collide(particle, oldPos, self.intersections[firstIndex], self)
-                t += reachTime
                 if calcData and (preCollidePos != particle.getPos()).any():
                     self.positions[particleIndex].append(preCollidePos)
+                particle.move(self.timeTolerance) #moving to avoid ray origin intersecting with compartments on next iteration
+                t += reachTime + self.timeTolerance
             else:
                 particle.move(self.timeStep - t)
                 t = self.timeStep
@@ -113,6 +118,7 @@ class Simulation():
                 self.positions[particleIndex].append(particle.getPos().copy())
                 self.truePositions[particleIndex].append(particle.getTruePos().copy())
         if calcData:
+            self.dataCompartments[particleIndex].append(particle.getCompartment())
             self.posStepIndices[particleIndex].append(len(self.positions[particleIndex]) - 1)
             self.truePosStepIndices[particleIndex].append(len(self.truePositions[particleIndex]) - 1)
 
@@ -121,8 +127,8 @@ class Simulation():
         #positionType represents whether to plot "true" or "in cell" positions
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
-        nPart = len(self.particles)
-        colors = cm.rainbow(np.linspace(0, 1, nPart))
+        colors = cm.rainbow(np.linspace(0, 1, self.nPart))
+        compartmentColors = cm.gnuplot(np.linspace(0, 1, self.nComp))
         
         if positionType:
             data = self.truePositions
@@ -138,9 +144,14 @@ class Simulation():
             data = self.positions
             indices = self.posStepIndices
 
-        for p in range(nPart):
-            Util.plotPoints(data[p], ax.plot, colors[p])
-            Util.plotPoints([data[p][i] for i in range(len(data[p])) if i in indices[p]], ax.scatter, colors[p])
+        for p in range(self.nPart):
+            Util.plotPoints(data[p], ax.plot, colors[p]) #line plot
+
+            #dot plot
+            plotData = [data[p][i] for i in range(len(data[p])) if i in indices[p]]
+            for c in range(self.nComp):
+                Util.plotPoints([plotData[j] for j in range(len(plotData)) \
+                                 if self.dataCompartments[p][j] == self.compartments[c]], ax.scatter, compartmentColors[c])
 
         for compartment in self.compartments:
             compartment.plot(ax)
@@ -151,9 +162,8 @@ class Simulation():
         plt.show()
         
     def getStepLengths(self):
-        nPart = len(self.particles)
-        stepLengths = [[] for i in range(nPart)]
-        for p in range(nPart):
+        stepLengths = [[] for i in range(self.nPart)]
+        for p in range(self.nPart):
             posList = self.truePositions[p]
             d = 0
             for s in range(1,len(posList)):
@@ -176,9 +186,8 @@ class Simulation():
 
     def getSGPSignal(self, gamma, G, delta):
         if self.signal == None:
-            nPart = len(self.particles)
             res = 0
-            for p in range(nPart):
+            for p in range(self.nPart):
                 res += cmath.exp(1j*gamma*delta*np.dot(self.getDisplacements()[p], G))*self.particles[p].getSignal()
-            self.signal = res/nPart
+            self.signal = res/self.nPart
         return self.signal

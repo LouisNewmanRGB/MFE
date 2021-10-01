@@ -9,6 +9,7 @@ from Environment import Environment
 from Simulation import Simulation
 from Sphere import Sphere
 from Util import Util
+from Ellipsoid import Ellipsoid
 
 def runSim(i, t, plotHist):
     startTime = time.time()
@@ -20,7 +21,8 @@ def runSim(i, t, plotHist):
     envSize = 5*radius
     env = Environment(T2, D, envSize, envSize, envSize)
     part = [Particle3D(0, 0, 0) for i in range(nPart)]
-    sim = Simulation(n, timeStep, part, env, [Sphere(0, 0, 0, T2, D, 0, radius)])
+    #sim = Simulation(n, timeStep, part, env, [Sphere(0, 0, 0, T2, D, 0, radius)])
+    sim = Simulation(n, timeStep, part, env, [Ellipsoid(0, 0, 0, T2, D, 0, radius, radius, radius)])
     #sim = Simulation(n, timeStep, part, env)
     sim.run(seed=None, calcData=False)
 

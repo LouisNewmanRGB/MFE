@@ -4,11 +4,6 @@ import math
 import scipy.stats
 
 class Util():
-    TOL = 1e-10
-
-    def rootsReal(array):
-        roots = np.roots(array)
-        return roots.real[abs(roots.imag)<Util.TOL]
 
     def recursiveMax(listOfLists):
         if type(listOfLists[0]) == list:
@@ -66,24 +61,4 @@ class Util():
             return np.heaviside(r - radius, 0) + np.heaviside(radius - r, 1)*( (r/radius)**3 + \
                         2*np.sum([np.exp(-D*diffusionTime*alpha**2)* \
                                   (np.sin(alpha*r) - alpha*r*np.cos(alpha*r))/(alpha*np.sin(alpha*radius)**2) for alpha in alphaList], axis=0)/radius )
-            """
-            if type(r) == np.ndarray:
-                res = np.ones(len(r))
-                for i in range(len(r)):
-                    #res[i] = F(r[i])
-                    if r[i] < radius:
-                        res[i] = (r[i]/radius)**3 + \
-                            2*np.sum([np.exp(-D*diffusionTime*alpha**2)* \
-                                      (np.sin(alpha*r[i]) - alpha*r[i]*np.cos(alpha*r[i]))/(alpha*np.sin(alpha*radius)**2) for alpha in alphaList])/radius
-                    else:
-                        res[i] = 1
-                return res
-            else:
-                if r < radius:
-                    return (r/radius)**3 + \
-                        2*np.sum([np.exp(-D*diffusionTime*alpha**2)* \
-                                  (np.sin(alpha*r) - alpha*r*np.cos(alpha*r))/(alpha*np.sin(alpha*radius)**2) for alpha in alphaList])/radius
-                else:
-                    return 1
-            """
         return F

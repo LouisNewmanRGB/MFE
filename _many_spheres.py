@@ -44,5 +44,5 @@ for x in positions:
 env = Environment(T2, D, voxelDim, voxelDim, voxelDim)
 particles = [Particle3D(Util.getRandomU(voxelDim),Util.getRandomU(voxelDim),Util.getRandomU(voxelDim)) for i in range(nPart)]
 sim = Simulation(nStep, timeStep, particles, env, compartments)
-sim.run(seed=1, calcData=False)
+sim.run(seed=1, calcData=False, partPrintNumber=10)
 print("Done")

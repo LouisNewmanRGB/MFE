@@ -71,7 +71,7 @@ def finalPlot(logScale=False):
     plt.show()
 
 diffusionTimes = [1, 20, 100] #ms
-nParts = [10, 100, 1000, 10000, 100000]
+nParts = [10, 100, 1000, 10000]#, 100000]
 nStep = 8
 D = 2e-3/1000 #mm2/ms
 T2 = 1 #irrelevant for this test

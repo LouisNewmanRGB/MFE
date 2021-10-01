@@ -1,34 +1,32 @@
 import numpy as np
 
 from Sphere import Sphere
-from Particle3D import Particle3D
 from Util import Util
 
-S = Sphere(0,0,0,-1,-1, 1)
-P = Particle3D(0.,0.,0.)
+S = Sphere(0,0,0,-1,-1, 1, 1)
 
-P.setVelocity(np.array([0.5,0., 0.]))
-print(S.findIntersection(P))
+ray = np.array([np.array([0, 0, 0]), np.array([1, 0, 0])])
+print(S.findIntersection(ray, 100))
 
-P.setVelocity(np.array([-0.5,0., 0.]))
-print(S.findIntersection(P))
+ray = np.array([np.array([0, 0, 0]), np.array([-1, 0, 0])])
+print(S.findIntersection(ray, 100))
 
-P.setVelocity(np.array([0.5,0.5, 0.]))
-print(S.findIntersection(P))
+ray = np.array([np.array([0, 0, 0]), np.array([1/2**0.5, 1/2**0.5, 0])])
+print(S.findIntersection(ray, 100))
 
-P.setVelocity(np.array([0.5,0., 0.]))
+ray = np.array([np.array([0, 0, 0]), np.array([1, 0, 0])])
 S.setPos(np.array([2.,0., 0.]))
-print(S.findIntersection(P))
+print(S.findIntersection(ray, 100))
 
-P.setVelocity(np.array([0.5,0., 0.]))
+ray = np.array([np.array([0, 0, 0]), np.array([1, 0, 0])])
 S.setPos(np.array([-2.,0., 0.]))
-print(S.findIntersection(P))
+print(S.findIntersection(ray, 100))
 
-P.setVelocity(np.array([-0.5,0., 0.]))
+ray = np.array([np.array([0, 0, 0]), np.array([-1, 0, 0])])
 S.setPos(np.array([-2.,0., 0.]))
-print(S.findIntersection(P))
+print(S.findIntersection(ray, 100))
 
-P.setPos(np.array([0., 4., 0.]))
-print(S.findIntersection(P))
+ray = np.array([np.array([0, 4, 0]), np.array([1, 0, 0])])
+print(S.findIntersection(ray, 100))
 
-print(Util.recursiveMax([[0,1],[2,-3]]))
+#print(Util.recursiveMax([[0,1],[2,-3]]))

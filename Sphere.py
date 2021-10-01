@@ -2,8 +2,6 @@ import numpy as np
 import random
 
 from AbstractCompartment import AbstractCompartment
-from Simulation import Simulation
-from Util import Util
 from Particle3D import Particle3D
 
 class Sphere(AbstractCompartment):
@@ -15,23 +13,32 @@ class Sphere(AbstractCompartment):
     def findIntersection(self, ray, maxDistance):
         if np.linalg.norm(ray[0] - self.pos) - self.radius <= maxDistance:
             L = self.pos - ray[0]
-            tList = Util.rootsReal([1, -2*np.dot(ray[1], L), np.linalg.norm(L)**2 - self.radius**2])
-            if len(tList) > 0:
-                tList = np.sort(tList)
-                if tList[0] > 0:
-                    return ray[0] + tList[0] * ray[1]
-                elif len(tList) == 2 and tList[1] > 0:
-                    return ray[0] + tList[1] * ray[1]
-        return None
+            b = -2*np.dot(ray[1], L)
+            c = np.linalg.norm(L)**2 - self.radius**2
+            delta = b**2 - 4*c
+            if delta > 0:
+                t = (-b - delta**0.5) / 2
+                if t > 0:
+                    return ray[0] + t * ray[1]
+                else:
+                    t = (-b + delta**0.5) / 2
+                    if t > 0:
+                        return ray[0] + t * ray[1]
+            elif delta == 0:
+                t = -b/2
+                if t > 0:
+                    return ray[0] + t * ray[1]
 
     def collide(self, particle, oldPos, intersection, sim):
-        otherSideComp = sim.findCompartment(Particle3D(*intersection + particle.getVelocity()*Simulation.TIME_TOL))
-        if otherSideComp.contains(Particle3D(*oldPos)):
-            #the particle is leaving a compartment
+        if self.contains(Particle3D(*oldPos)):
+            #we are leaving this compartment
+            otherSideComp = sim.findCompartment(particle, excludedComp = self)
             probability = self.probInOut
         else:
-            #the particle is entering a compartment
+            #we are entering this compartment
+            otherSideComp = self
             probability = self.probInOut * (self.diffusivity/particle.getCompartment().getDiffusivity())**0.5
+
         if random.random() > probability:
             #deflection
             normal = (intersection - self.pos)
