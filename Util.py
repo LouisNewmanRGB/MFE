@@ -19,6 +19,10 @@ class Util():
     def getRandomU(size):
         return (random.random()-0.5)*size
 
+    def getRandomQuadratic(radius):
+        #returns a random number drawn from the interval [0, radius] following a quadradic pdf
+        return radius*random.random()**(1/3)
+
     def plotPoints(data, plotter, color):
         xArray = np.array([pos[0] for pos in data])
         yArray = np.array([pos[1] for pos in data])
@@ -57,7 +61,6 @@ class Util():
         alphaList = Util.genAlphaList(nTerms, nIter, radius)
 
         def F(r):
-
             return np.heaviside(r - radius, 0) + np.heaviside(radius - r, 1)*( (r/radius)**3 + \
                         2*np.sum([np.exp(-D*diffusionTime*alpha**2)* \
                                   (np.sin(alpha*r) - alpha*r*np.cos(alpha*r))/(alpha*np.sin(alpha*radius)**2) for alpha in alphaList], axis=0)/radius )

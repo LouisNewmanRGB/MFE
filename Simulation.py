@@ -9,7 +9,7 @@ import time
 from Util import Util
 
 class Simulation():
-    TOL = 1e-5 #relative tolerance
+    TOL = 1e-10 #relative tolerance
 
     def __init__(self, nStep, timeStep, particles, environment, compartments=[]):
         self.particles = particles
@@ -28,6 +28,7 @@ class Simulation():
         
         #for results
         self.displacements = None
+        self.endPositions = None
         self.distances = None
         self.signal = None
         
@@ -172,6 +173,11 @@ class Simulation():
                     stepLengths[p].append(d)
                     d = 0
         return stepLengths
+
+    def getEndPositions(self):
+        if type(self.endPositions) != np.array:
+            self.endPositions = np.array([particle.getTruePos() for particle in self.particles])
+        return self.endPositions
         
     def getDistances(self):
         if type(self.distances) != np.array:

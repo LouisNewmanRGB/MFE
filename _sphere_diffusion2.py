@@ -7,6 +7,7 @@ import time
 from Particle3D import Particle3D
 from Environment import Environment
 from Simulation import Simulation
+from Sphere import Sphere
 from Util import Util
 
 def runSim(i, t, r, plotHist):
@@ -15,10 +16,15 @@ def runSim(i, t, r, plotHist):
     diffusionTime = diffusionTimes[t]
     timeStep = diffusionTime / nStep
     l = (6*D*timeStep)**0.5
-    envSize = 10*l
+    envSize = 5*radius
     env = Environment(T2, D, envSize, envSize, envSize)
-    part = [Particle3D(Util.getRandomU(envSize),Util.getRandomU(envSize),Util.getRandomU(envSize)) for i in range(nPart)]
-    sim = Simulation(nStep, timeStep, part, env)
+    #part = [Particle3D(*Util.getRandomDirection()*Util.getRandomQuadratic(radius)) for i in range(nPart)]
+    part = [Particle3D(0, 0, 0) for i in range(nPart)]
+    for p in part:
+        rad = np.linalg.norm(p.getPos())
+        if rad > 8:
+            print("PROB")
+    sim = Simulation(nStep, timeStep, part, env, [Sphere(0, 0, 0, T2, D, 0, radius)])
     sim.run(seed=None, calcData=False)
 
     #kolmogorov-smirnov
@@ -35,14 +41,16 @@ def runSim(i, t, r, plotHist):
     if plotHist:
         bw = 2*scipy.stats.iqr(sim.getDistances(), rng=(25, 75))/(len(sim.getDistances()))**(1/3)
         nBins = int((np.max(sim.getDistances()) - np.min(sim.getDistances()))/bw)
+
         plt.hist(sim.getDistances(), bins=nBins, density = True, stacked=True)
+        #plt.hist([np.linalg.norm(pos) for pos in sim.getEndPositions()], bins=nBins, density = True, stacked=True)
         plt.plot(points, distribPoints, color = 'red')
         plt.legend(["Expected probability density function", "Random walk results histogram"])
         plt.xlabel("Distance travelled [um]")
         plt.ylabel("[um-1]")
-        plt.title("Probability distribution of the distance travelled by a particle\n"
+        plt.title("Probability distribution of the distance travelled by a particle (sphere radius = {radius}um)\n"
                   "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}, run {r}/{nRuns}"
-                  .format(diffusionTime=diffusionTime, nPart=nPart, n=nStep, r=r+1, nRuns=nRuns))
+                  .format(diffusionTime=diffusionTime, nPart=nPart, n=nStep, radius=radius, r=r+1, nRuns=nRuns))
         plt.show()
 
     #numbers
@@ -66,15 +74,16 @@ def finalPlot(logScale=False):
     plt.ylabel("Supremum of distances between exact and empirical cumulative distribution functions")
     plt.legend(["Theoretical distances\n(n^-1/2 convergence rate)"] +
                ["Diffusion time = {diffusionTime}ms".format(diffusionTime=dt) for dt in diffusionTimes])
-    plt.title("Random walk simulation of free diffusion for different diffusion times and numbers of particles\n"
+    plt.title("Random walk simulation of diffusion in an impermeable sphere for different diffusion times and numbers of particles\n"
           "(Number of steps = {n}, {nRuns} run average)".format(n=nStep, nRuns=nRuns))
     plt.show()
 
 nRuns = 5
-diffusionTimes = [1, 20, 100] #ms
-nParts = [10, 100, 1000, 10000, 100000]
+diffusionTimes = [2, 3, 10] #ms
+nParts = [100, 1000, 10000, 100000]
 nStep = 8
 D = 2 #um2/ms
+radius = 8 #um
 T2 = 1 #irrelevant for this test
 
 errors = np.zeros((len(diffusionTimes), len(nParts), nRuns))
@@ -82,11 +91,11 @@ pvalues = np.zeros((len(diffusionTimes), len(nParts), nRuns))
 
 for t in range(len(diffusionTimes)):
     diffusionTime = diffusionTimes[t]
-    truePDF = Util.getPDF(D, diffusionTime)
-    trueCDF = Util.getCDF(D, diffusionTime)
+    truePDF = Util.getPDF_sphere(D, diffusionTime, radius, 500, 5)
+    trueCDF = Util.getCDF_sphere(D, diffusionTime, radius, 1000, 5)
 
-    points = np.linspace(0, 4 * (6 * D * diffusionTime)**0.5, 500)
-    distribPoints = truePDF(points)
+    points = np.linspace(0, 1.1*radius, 500)
+    distribPoints = [truePDF(p) for p in points]
     for i in range(len(nParts)):
         for r in range(nRuns):
             runSim(i, t, r, False)
