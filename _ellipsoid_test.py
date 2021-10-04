@@ -5,47 +5,47 @@ from Sphere import Sphere
 from Particle3D import Particle3D
 from Util import Util
 
-E = Ellipsoid(0, 0, 0, -1, -1, -1, np.array([1, 1, 0]), np.array([0, 2, 2]), np.array([0.5, 0, 0.5]))
-S = Sphere(0,0,0,-1,-1, -1, 0.5)
-P = Particle3D(0.,0.,0.)
+#E = Ellipsoid(0, 0, 0, -1, -1, -1, np.array([1, 1, 0]), np.array([0, 2, 2]), np.array([0.5, 0, 0.5]))
+E = Ellipsoid(0, 0, 0, -1, -1, -1, 1, 1, 1)
+S = Sphere(0,0,0,-1,-1, -1, 1)
 
-P.setVelocity(np.array([0.5,0., 0.]))
-print(S.findIntersection(P))
-print(E.findIntersection(P), "\n")
+ray = np.array([[0, 0, 0], [1, 0, 0]])
+print(S.findIntersection(ray, 10))
+print(E.findIntersection(ray, 10), "\n")
 
-P.setVelocity(np.array([-0.5,0., 0.]))
-print(S.findIntersection(P))
-print(E.findIntersection(P), "\n")
+ray = np.array([[0, 0, 0], [-1, 0, 0]])
+print(S.findIntersection(ray, 10))
+print(E.findIntersection(ray, 10), "\n")
 
-P.setVelocity(np.array([0.5,0.5, 0.]))
-print(S.findIntersection(P))
-print(E.findIntersection(P), "\n")
+ray = np.array([[0, 0, 0], [2**-0.5, 2**-0.5, 0]])
+print(S.findIntersection(ray, 10))
+print(E.findIntersection(ray, 10), "\n")
 
-P.setVelocity(np.array([0.5,0., 0.]))
+ray = np.array([[0, 0, 0], [1, 0, 0]])
 S.setPos(np.array([2.,0., 0.]))
 E.setPos(np.array([2.,0., 0.]))
-print(S.findIntersection(P))
-print(E.findIntersection(P), "\n")
+print(S.findIntersection(ray, 10))
+print(E.findIntersection(ray, 10), "\n")
 
-P.setVelocity(np.array([0.5,0., 0.]))
+ray = np.array([[0, 0, 0], [1, 0, 0]])
 S.setPos(np.array([-2.,0., 0.]))
 E.setPos(np.array([-2.,0., 0.]))
-print(S.findIntersection(P))
-print(E.findIntersection(P), "\n")
+print(S.findIntersection(ray, 10))
+print(E.findIntersection(ray, 10), "\n")
 
-P.setVelocity(np.array([-0.5,0., 0.]))
+ray = np.array([[0, 0, 0], [-1, 0, 0]])
 S.setPos(np.array([-2.,0., 0.]))
 E.setPos(np.array([-2.,0., 0.]))
-print(S.findIntersection(P))
-print(E.findIntersection(P), "\n")
+print(S.findIntersection(ray, 10))
+print(E.findIntersection(ray, 10), "\n")
 
-P.setPos(np.array([0., 4., 0.]))
-print(S.findIntersection(P))
-print(E.findIntersection(P), "\n")
+ray = np.array([[0, 4, 0], [-1, 0, 0]])
+print(S.findIntersection(ray, 10))
+print(E.findIntersection(ray, 10), "\n")
 
 
 
-#print(Util.recursiveMax([[0,1],[2,-3]]))
+P = Particle3D(0, 0, 0)
 P.setPos(np.array([0, 0, 0]))
 E = Ellipsoid(0, 0, 0, -1, -1, -1, 0.5, 2, 1)
 print(E.contains(P))
@@ -55,5 +55,3 @@ P.setPos(np.array([0, 2.5, 0]))
 print(E.contains(P))
 P.setPos(np.array([0, 0, .99]))
 print(E.contains(P))
-
-E.plot(1)

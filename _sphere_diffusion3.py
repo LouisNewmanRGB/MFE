@@ -12,7 +12,8 @@ from Util import Util
 
 def runSim(i, t, r, plotHist):
     startTime = time.time()
-    nPart = nParts[i]
+    nPart = nParts[t, i]
+    nStep = nSteps[t]
     diffusionTime = diffusionTimes[t]
     timeStep = diffusionTime / nStep
     l = (6*D*timeStep)**0.5
@@ -25,7 +26,7 @@ def runSim(i, t, r, plotHist):
 
     #kolmogorov-smirnov
     print("{diffusionTime}ms diffusion time ({t}/{totDt}) and {nPart} particles ({i}/{totStep}), run {r}/{nRuns}:"
-    .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, i=i+1, totStep=len(nParts), r=r+1, nRuns=nRuns))
+    .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, i=i+1, totStep=len(nParts[0]), r=r+1, nRuns=nRuns))
     test = scipy.stats.kstest(sim.getDistances(), trueCDF)
     print("Computation time: {compTime}s".format(compTime = time.time() - startTime))
     print("Kolmogorov-Smirnov test Statistic:", test.statistic)
@@ -53,37 +54,43 @@ def runSim(i, t, r, plotHist):
     #print("numer:", np.average(np.power(sim.getDistances(), 2)))
     #print("theor:", 6*D*diffusionTime)
 
-def finalPlot(logScale=False):
+def finalPlot(t, logScale=False):
     if logScale:
         plt.yscale("log")
-        finalPoints = np.array([nParts[0]/10, nParts[-1]*10])
+        finalPoints = np.array([nParts[t,0]/10, nParts[t, -1]*10])
     else:
-        finalPoints = 10**np.linspace(np.log10(nParts[0]/1.5), np.log10(nParts[-1]*5), 500)
+        finalPoints = 10**np.linspace(np.log10(nParts[t,0]/1.5), np.log10(nParts[t,-1]*5), 500)
 
     colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
-    for t in range(len(diffusionTimes)):
-        plt.scatter(nParts, averageErrors[t,:], color = colors[t])
+    plt.scatter(nParts[t,:], averageErrors[t,:], color = colors[t])
     plt.plot(finalPoints, finalPoints**(-0.5), color = "black")
 
     plt.xscale("log")
     plt.xlabel("Number of particles")
     plt.ylabel("Supremum of distances between exact and empirical cumulative distribution functions")
-    plt.legend(["Theoretical distances\n(n^-1/2 convergence rate)"] +
-               ["Diffusion time = {diffusionTime}ms".format(diffusionTime=dt) for dt in diffusionTimes])
+    plt.legend(["Theoretical distances\n(n^-1/2 convergence rate)",
+                "Diffusion time = {diffusionTime}ms".format(diffusionTime=diffusionTimes[t])])
     plt.title("Random walk simulation of diffusion in an impermeable sphere for different diffusion times and numbers of particles\n"
-          "(Number of steps = {n}, {nRuns} run average)".format(n=nStep, nRuns=nRuns))
+          "(Number of steps = {n}, {nRuns} run average)".format(n=nSteps[t], nRuns=nRuns))
     plt.show()
 
-nRuns = 5
-diffusionTimes = [2, 3, 10] #ms
-nParts = [100, 1000, 10000, 100000]
-nStep = 8
-D = 2 #um2/ms
+nRuns = 1
 radius = 8 #um
+magicl2 = 4.5 #3 #um2
+D = 2 #um2/ms
+diffusionTimes = np.array([3, 10, 100]) #ms
+totalSteps = np.array([100, 1000, 10000, 100000])*8
+nSteps = [int(np.rint(n)) for n in 6*D*diffusionTimes/magicl2]
+print(nSteps)
+nParts = [None] * len(diffusionTimes)
+for t in range(len(diffusionTimes)):
+    nParts[t] = np.array([int(np.rint(p)) for p in totalSteps/nSteps[t]])
+nParts = np.array(nParts)
+print(nParts)
 T2 = 1 #irrelevant for this test
 
-errors = np.zeros((len(diffusionTimes), len(nParts), nRuns))
-pvalues = np.zeros((len(diffusionTimes), len(nParts), nRuns))
+errors = np.zeros((len(diffusionTimes), len(totalSteps), nRuns))
+pvalues = np.zeros((len(diffusionTimes), len(totalSteps), nRuns))
 
 for t in range(len(diffusionTimes)):
     diffusionTime = diffusionTimes[t]
@@ -92,7 +99,7 @@ for t in range(len(diffusionTimes)):
 
     points = np.linspace(0, 1.1*radius, 500)
     distribPoints = [truePDF(p) for p in points]
-    for i in range(len(nParts)):
+    for i in range(len(totalSteps)):
         for r in range(nRuns):
             runSim(i, t, r, False)
 
@@ -101,5 +108,6 @@ print("ERRORS:", errors)
 print("PVALUES:", pvalues)
 averageErrors = np.average(errors, axis=2)
 print("AVERAGE ERRORS:", averageErrors)
-finalPlot(logScale=False)
-finalPlot(logScale=True)
+for t in range(len(diffusionTimes)):
+    finalPlot(t, logScale=False)
+    finalPlot(t, logScale=True)

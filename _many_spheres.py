@@ -11,7 +11,7 @@ radius = 8#um
 voxelDim = 500#um
 nStep = 8
 nPart = int(1e5)
-D = 2e-3*1e6*1e-3 #um2/ms
+D = 2 #um2/ms
 probInOut = 0.25
 T2 = 1 #not useful
 
@@ -22,19 +22,12 @@ for timeStep in timeSteps:
     print("Time step = {timeStep}ms\nl = {l}um\n".format(timeStep=timeStep, l=l))
 
 timeStep = timeSteps[1]
-print(timeStep)
+print("Chosen timestep: {timeStep}ms".format(timeStep=timeStep))
 
 nSpheresLine = int((5000)**(1/3))
-#print(nSpheresLine)
-sphereDistance = voxelDim/nSpheresLine - 2*radius
-#print(sphereDistance)
+#sphereDistance = voxelDim/nSpheresLine - 2*radius
 spacing = voxelDim / (2*nSpheresLine)
-#print(spacing)
-#print(sphereDistance/2 + radius)
 positions = np.linspace(spacing, voxelDim - spacing, nSpheresLine)
-#print(positions)
-#print([(2*i + 1)*spacing for i in range(nSpheresLine)])
-
 
 compartments = []
 for x in positions:

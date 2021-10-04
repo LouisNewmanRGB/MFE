@@ -52,12 +52,12 @@ def runSim(i, t, r, plotHist):
     #print("numer:", np.average(np.power(sim.getDistances(), 2)))
     #print("theor:", 6*D*diffusionTime)
 
-nRuns = 5
-diffusionTimes = [2, 3, 10] #ms
+nRuns = 1
+diffusionTimes = [10, 3, 10] #ms
 totalSteps = int(1e5)
 #nStep = [2, 4, 8, 16, 32, 50, 100, 250, 500, 1000] #dividers of 100 000
 #nStep = [6, 7, 8, 9, 10, 12, 16, 20, 35, 50]
-nStep = [4, 5, 6, 7, 8]
+nStep = [8, 4, 5, 6, 7, 8]
 D = 2 #um2/ms
 radius = 8 #um
 T2 = 1 #irrelevant for this test
@@ -74,7 +74,7 @@ for t in range(len(diffusionTimes)):
     distribPoints = [truePDF(p) for p in points]
     for i in range(len(nStep)):
         for r in range(nRuns):
-            runSim(i, t, r, False)
+            runSim(i, t, r, True)
 
 #final plot
 print("ERRORS:", errors)

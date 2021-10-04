@@ -11,6 +11,7 @@ class Sphere(AbstractCompartment):
         self.radius = radius
 
     def findIntersection(self, ray, maxDistance):
+        #ray direction vector must be normalized!
         if np.linalg.norm(ray[0] - self.pos) - self.radius <= maxDistance:
             L = self.pos - ray[0]
             b = -2*np.dot(ray[1], L)
