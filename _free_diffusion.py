@@ -26,10 +26,12 @@ def runSim(i, t, r, plotHist):
     print("{diffusionTime}ms diffusion time ({t}/{totDt}), {nPart} particles and {n} steps ({i}/{totStep}), run {r}/{nRuns}:"
     .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, n=n, i=i+1, totStep=len(nStep), r=r+1, nRuns=nRuns))
     test = scipy.stats.kstest(sim.getDistances(), trueCDF)
+    rmse = Util.RMSE(sim.getDistances(), trueCDF) #doesn't work
+    #print("Custom:", rmse)
     print("Computation time: {compTime}s".format(compTime = time.time() - startTime))
     print("Kolmogorov-Smirnov test Statistic:", test.statistic)
     print("Kolmogorov-Smirnov test pvalue:", test.pvalue, "\n")
-    errors[t, i, r] = test.statistic
+    errors[t, i, r] = rmse #test.statistic
     pvalues[t, i, r] = test.pvalue
 
     #histograms
@@ -76,13 +78,15 @@ for t in range(len(diffusionTimes)):
 print("ERRORS:", errors)
 print("PVALUES:", pvalues)
 averageErrors = np.average(errors, axis=2)
+stdDevs = np.std(errors, axis = 2)
 print("AVERAGE ERRORS:", averageErrors)
 colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
 for t in range(len(diffusionTimes)):
-    plt.scatter(nStep, averageErrors[t,:], color = colors[t])
+    #plt.scatter(nStep, averageErrors[t,:], color = colors[t])
+    plt.errorbar(nStep, averageErrors[t,:], stdDevs[t,:], color = colors[t], ecolor = colors[t])
 plt.xscale("log")
 plt.xlabel("Number of steps")
-plt.ylabel("Supremum of distances between exact and empirical cumulative distribution functions")
+plt.ylabel("RMSE between exact and empirical CDFs")
 plt.legend(["Diffusion time = {diffusionTime}ms".format(diffusionTime=dt) for dt in diffusionTimes])
 plt.title("Random walk simulation of free diffusion for different diffusion times and numbers of steps\n"
           "particles x steps = {totalSteps}, {nRuns} run average".format(totalSteps=totalSteps, nRuns=nRuns))

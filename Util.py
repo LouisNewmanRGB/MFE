@@ -2,6 +2,7 @@ import numpy as np
 import random
 import math
 import scipy.stats
+import scipy.integrate
 
 class Util():
 
@@ -28,6 +29,25 @@ class Util():
         yArray = np.array([pos[1] for pos in data])
         zArray = np.array([pos[2] for pos in data])
         plotter(xArray, yArray, zArray, color = color)
+
+    #def getCDFEmpirical(data):
+    #    def F(x):
+    #        return np.sum([np.heaviside(x-d, 1) for d in data], axis = 0) / len(data)
+    #    return F
+
+    def RMSE(data, CDF):
+        sorted = np.sort(data)
+        n = len(sorted)
+        ECDF = np.arange(1, n+1)/n
+        return ( ((ECDF - CDF(sorted))**2).mean() )**0.5
+        #return np.max(np.abs(ECDF - CDF(sorted)))
+
+    def RMSE(data, CDF):
+        n = len(data)
+        def func(x):
+            return (CDF(x) - np.sum([np.heaviside(x-d, 1) for d in data], axis = 0) / n )**2
+        #return np.max(np.abs(func(data)))
+        return scipy.integrate.quad(func, -np.inf, np.inf)[0]**0.5
 
     def getPDF(D, diffusionTime):
         def f(x):
@@ -65,3 +85,9 @@ class Util():
                         2*np.sum([np.exp(-D*diffusionTime*alpha**2)* \
                                   (np.sin(alpha*r) - alpha*r*np.cos(alpha*r))/(alpha*np.sin(alpha*radius)**2) for alpha in alphaList], axis=0)/radius )
         return F
+
+    def getSignal_sphere(radius):
+        def s(q):
+            qR = q*radius
+            return 9*(qR*np.cos(qR) - np.sin(qR))**2 / qR**6
+        return s

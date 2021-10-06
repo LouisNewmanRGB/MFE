@@ -7,9 +7,9 @@ from Simulation import Simulation
 from Sphere import Sphere
 from Util import Util
 
-nStep = 8
-timeStep = 10/nStep #ms
-timeStep = 1
+nStep = 2
+timeStep = 100/nStep #ms
+#timeStep = 1
 D = 2 #um2/ms
 l = (6*D*timeStep)**0.5
 radius = 8 #um
@@ -19,7 +19,8 @@ T2 = 1 #irrelevant
 probInOut = 0
 
 envi = Environment(T2, D, envSize, envSize, envSize)
-part = [Particle3D(*Util.getRandomDirection()*Util.getRandomQuadratic(radius)) for i in range(2)]
+#part = [Particle3D(*Util.getRandomDirection()*Util.getRandomQuadratic(radius)) for i in range(1)]
+part = [Particle3D(0, 0, 0) for i in range(1)]
 compartments = [Sphere(0,0,0,T2,2*D, probInOut, radius)]
 sim = Simulation(nStep, timeStep, part, envi, compartments)
 

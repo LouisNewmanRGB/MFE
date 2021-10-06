@@ -190,10 +190,19 @@ class Simulation():
             self.displacements = endPos - self.startingPositions
         return self.displacements
 
-    def getSGPSignal(self, gamma, G, delta):
-        if self.signal == None:
-            res = 0
+    def getAvgDisplacements(self):
+        return np.average(self.getDisplacements(), axis=0)
+
+    def getSGPSignal(self, qVector, real=False):
+        #if self.signal == None:
+        res = 0
+        disp = self.getDisplacements()
+        if real:
             for p in range(self.nPart):
-                res += cmath.exp(1j*gamma*delta*np.dot(self.getDisplacements()[p], G))*self.particles[p].getSignal()
-            self.signal = res/self.nPart
-        return self.signal
+                if disp[p][0] > 0:
+                    res += 2*np.cos(np.dot(disp[p], qVector))*self.particles[p].getSignal()
+        else:
+            for p in range(self.nPart):
+                res += cmath.exp(1j*np.dot(disp[p], qVector))*self.particles[p].getSignal()
+        return abs(res)/self.nPart
+        #return self.signal
