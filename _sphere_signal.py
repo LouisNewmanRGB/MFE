@@ -14,6 +14,8 @@ def runSim(i, t, r, plotHist):
     startTime = time.time()
     nPart = nParts[t, i]
     nStep = nSteps[t]
+    nStep = 8
+    nPart = 10000
     diffusionTime = diffusionTimes[t]
     timeStep = diffusionTime / nStep
     l = (6*D*timeStep)**0.5
@@ -85,8 +87,8 @@ nRuns = 1
 radius = 8 #um
 magicl2 = 3 #4.5 #um2
 D = 2 #um2/ms
-diffusionTimes = np.array([10, 3, 10, 100]) #ms
-totalSteps = np.array([100000*5, 100, 1000, 10000, 100000])*8
+diffusionTimes = np.array([1000, 3, 10, 100]) #ms
+totalSteps = np.array([10000, 100, 1000, 10000, 100000])*8
 nSteps = [int(np.rint(n)) for n in 6*D*diffusionTimes/magicl2]
 nParts = [None] * len(diffusionTimes)
 for t in range(len(diffusionTimes)):

@@ -62,24 +62,26 @@ def finalPlot(t, logScale=False):
         finalPoints = 10**np.linspace(np.log10(nParts[t,0]/1.5), np.log10(nParts[t,-1]*5), 500)
 
     colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
-    plt.scatter(nParts[t,:], averageErrors[t,:], color = colors[t])
+    #plt.scatter(nParts[t,:], averageErrors[t,:], color = colors[t])
+    plt.errorbar(nParts[t,:], averageErrors[t,:], stdDevs[t,:], fmt="o", color = colors[t], ecolor = colors[t])
     plt.plot(finalPoints, finalPoints**(-0.5), color = "black")
 
     plt.xscale("log")
     plt.xlabel("Number of particles")
-    plt.ylabel("Supremum of distances between exact and empirical cumulative distribution functions")
+    plt.ylabel("Supremum distance between exact and empirical CDFs")
     plt.legend(["Theoretical distances\n(n^-1/2 convergence rate)",
                 "Diffusion time = {diffusionTime}ms".format(diffusionTime=diffusionTimes[t])])
     plt.title("Random walk simulation of diffusion in an impermeable sphere for different diffusion times and numbers of particles\n"
           "(Number of steps = {n}, {nRuns} run average)".format(n=nSteps[t], nRuns=nRuns))
     plt.show()
 
-nRuns = 1
+nRuns = 2
 radius = 8 #um
 magicl2 = 4.5 #3 #um2
 D = 2 #um2/ms
-diffusionTimes = np.array([3, 10, 100]) #ms
-totalSteps = np.array([100, 1000, 10000, 100000])*8
+diffusionTimes = np.array([2, 10, 100]) #ms
+#totalSteps = np.array([100, 1000, 10000, 100000])*8
+totalSteps = np.array([100, 1000])*8
 nSteps = [int(np.rint(n)) for n in 6*D*diffusionTimes/magicl2]
 print(nSteps)
 nParts = [None] * len(diffusionTimes)
@@ -107,6 +109,7 @@ for t in range(len(diffusionTimes)):
 print("ERRORS:", errors)
 print("PVALUES:", pvalues)
 averageErrors = np.average(errors, axis=2)
+stdDevs = np.std(errors, axis = 2)
 print("AVERAGE ERRORS:", averageErrors)
 for t in range(len(diffusionTimes)):
     finalPlot(t, logScale=False)

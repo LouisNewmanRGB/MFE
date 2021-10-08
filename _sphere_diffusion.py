@@ -52,12 +52,12 @@ def runSim(i, t, r, plotHist):
     #print("numer:", np.average(np.power(sim.getDistances(), 2)))
     #print("theor:", 6*D*diffusionTime)
 
-nRuns = 1
-diffusionTimes = [10, 3, 10] #ms
-totalSteps = int(1e5)
-#nStep = [2, 4, 8, 16, 32, 50, 100, 250, 500, 1000] #dividers of 100 000
+nRuns = 2
+diffusionTimes = [2, 3, 10] #ms
+totalSteps = int(1e4)
+nStep = [2, 4, 8, 16, 32, 50, 100, 250, 500, 1000] #dividers of 100 000
 #nStep = [6, 7, 8, 9, 10, 12, 16, 20, 35, 50]
-nStep = [8, 4, 5, 6, 7, 8]
+#nStep = [8, 4, 5, 6, 7, 8]
 D = 2 #um2/ms
 radius = 8 #um
 T2 = 1 #irrelevant for this test
@@ -74,19 +74,21 @@ for t in range(len(diffusionTimes)):
     distribPoints = [truePDF(p) for p in points]
     for i in range(len(nStep)):
         for r in range(nRuns):
-            runSim(i, t, r, True)
+            runSim(i, t, r, False)
 
 #final plot
 print("ERRORS:", errors)
 print("PVALUES:", pvalues)
 averageErrors = np.average(errors, axis=2)
+stdDevs = np.std(errors, axis = 2)
 print("AVERAGE ERRORS:", averageErrors)
 colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
 for t in range(len(diffusionTimes)):
-    plt.scatter(nStep, averageErrors[t,:], color = colors[t])
+    #plt.scatter(nStep, averageErrors[t,:], color = colors[t])
+    plt.errorbar(nStep, averageErrors[t,:], stdDevs[t,:], fmt="o", color = colors[t], ecolor = colors[t])
 plt.xscale("log")
 plt.xlabel("Number of steps")
-plt.ylabel("Supremum of distances between pseudo-exact and empirical cumulative distribution functions")
+plt.ylabel("Supremum distance between exact and empirical CDFs")
 plt.legend(["Diffusion time = {diffusionTime}ms".format(diffusionTime=dt) for dt in diffusionTimes])
 plt.title("Random walk simulation of diffusion in an impermeable sphere for different diffusion times and numbers of steps\n"
           "particles x steps = {totalSteps}, {nRuns} run average".format(totalSteps=totalSteps, nRuns=nRuns))

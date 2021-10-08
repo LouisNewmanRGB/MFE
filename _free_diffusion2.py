@@ -58,21 +58,22 @@ def finalPlot(logScale=False):
 
     colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
     for t in range(len(diffusionTimes)):
-        plt.scatter(nParts, averageErrors[t,:], color = colors[t])
+        #plt.scatter(nParts, averageErrors[t,:], color = colors[t])
+        plt.errorbar(nParts, averageErrors[t,:], stdDevs[t,:], fmt="o", color = colors[t], ecolor = colors[t])
     plt.plot(finalPoints, finalPoints**(-0.5), color = "black")
 
     plt.xscale("log")
     plt.xlabel("Number of particles")
-    plt.ylabel("Supremum of distances between exact and empirical cumulative distribution functions")
+    plt.ylabel("Supremum distance between exact and empirical CDFs")
     plt.legend(["Theoretical distances\n(n^-1/2 convergence rate)"] +
                ["Diffusion time = {diffusionTime}ms".format(diffusionTime=dt) for dt in diffusionTimes])
     plt.title("Random walk simulation of free diffusion for different diffusion times and numbers of particles\n"
           "(Number of steps = {n}, {nRuns} run average)".format(n=nStep, nRuns=nRuns))
     plt.show()
 
-nRuns = 5
+nRuns = 2
 diffusionTimes = [1, 20, 100] #ms
-nParts = [10, 100, 1000, 10000, 100000]
+nParts = [10, 100, 1000, 10000] #, 100000]
 nStep = 8
 D = 2 #um2/ms
 T2 = 1 #irrelevant for this test
@@ -96,5 +97,6 @@ print("ERRORS:", errors)
 print("PVALUES:", pvalues)
 averageErrors = np.average(errors, axis=2)
 print("AVERAGE ERRORS:", averageErrors)
+stdDevs = np.std(errors, axis = 2)
 finalPlot(logScale=False)
 finalPlot(logScale=True)

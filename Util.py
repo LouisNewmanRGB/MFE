@@ -30,25 +30,6 @@ class Util():
         zArray = np.array([pos[2] for pos in data])
         plotter(xArray, yArray, zArray, color = color)
 
-    #def getCDFEmpirical(data):
-    #    def F(x):
-    #        return np.sum([np.heaviside(x-d, 1) for d in data], axis = 0) / len(data)
-    #    return F
-
-    def RMSE(data, CDF):
-        sorted = np.sort(data)
-        n = len(sorted)
-        ECDF = np.arange(1, n+1)/n
-        return ( ((ECDF - CDF(sorted))**2).mean() )**0.5
-        #return np.max(np.abs(ECDF - CDF(sorted)))
-
-    def RMSE(data, CDF):
-        n = len(data)
-        def func(x):
-            return (CDF(x) - np.sum([np.heaviside(x-d, 1) for d in data], axis = 0) / n )**2
-        #return np.max(np.abs(func(data)))
-        return scipy.integrate.quad(func, -np.inf, np.inf)[0]**0.5
-
     def getPDF(D, diffusionTime):
         def f(x):
             return scipy.stats.maxwell.pdf(x, loc = 0, scale = (2*D*diffusionTime)**0.5)
