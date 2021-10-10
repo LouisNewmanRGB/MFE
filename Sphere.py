@@ -20,15 +20,16 @@ class Sphere(AbstractCompartment):
             if delta > 0:
                 t = (-b - delta**0.5) / 2
                 if t > 0:
-                    return ray[0] + t * ray[1]
+                    return t
                 else:
                     t = (-b + delta**0.5) / 2
                     if t > 0:
-                        return ray[0] + t * ray[1]
+                        return t
             elif delta == 0:
                 t = -b/2
                 if t > 0:
-                    return ray[0] + t * ray[1]
+                    return t
+        return np.inf
 
     def collide(self, particle, oldPos, intersection, sim):
         if self.contains(Particle3D(*oldPos)):

@@ -19,5 +19,6 @@ part = [Particle3D(0, 0, 0) for i in range(nPart)]
 sim = Simulation(nStep, timeStep, part, envi)
 sim.run(seed=None, calcData = True)
 
+print(sim.getStepLengths())
 sim.plot(False)
 sim.plot(True)

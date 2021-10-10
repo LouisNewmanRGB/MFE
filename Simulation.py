@@ -1,12 +1,11 @@
 import numpy as np
 import random
-import math
-import cmath
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm #color map
 import time
 
 from Util import Util
+from SimulationResults import SimulationResults
 
 class Simulation():
     TOL = 1e-10 #relative tolerance
@@ -21,16 +20,9 @@ class Simulation():
         self.timeStep = timeStep
         self.timeTolerance = self.timeStep*Simulation.TOL #time used for particles to move right after collision
         self.startingPositions = np.array([particle.getTruePos() for particle in particles])
-
-        #for calculations at each iteration
-        self.reachTimes = np.array([None]*self.nComp)
-        self.intersections = np.array([None]*self.nComp)
         
         #for results
-        self.displacements = None
-        self.endPositions = None
-        self.distances = None
-        self.signal = None
+        self.results = None
         
         #for trajectory plotting
         self.positions = None
@@ -38,6 +30,12 @@ class Simulation():
         self.dataCompartments = None
         self.posStepIndices = None
         self.truePosStepIndices = None
+
+    def getParticles(self):
+        return self.particles
+
+    def getResults(self):
+        return self.results
         
     def getTimeStep(self):
         return self.timeStep
@@ -55,11 +53,7 @@ class Simulation():
     
     def run(self, seed=None, calcData = False, partPrintNumber = None):
         #calcData determines whether intermediate positions will be stored in memory
-        
-        #reset
-        self.diplacements = None
-        self.ditances = None
-        self.signal = None
+
         if calcData:
             self.positions = [[] for i in range(self.nPart)]
             self.truePositions = [[] for i in range(self.nPart)]
@@ -86,6 +80,7 @@ class Simulation():
                 self.nextStep(p, calcData)
             if partPrintNumber != None and (p+1)%partPrintNumber == 0:
                 print("Particle {p}/{nPart}\n{time}s\n".format(p=p+1, nPart=self.nPart, time=time.time() - startTime))
+        self.results = SimulationResults(self.startingPositions, self.particles)
     
     def nextStep(self, particleIndex, calcData):
         particle = self.particles[particleIndex]
@@ -93,21 +88,20 @@ class Simulation():
         particle.setVelocity(particle.getSpeed()*Util.getRandomDirection()) #random direction at each step
         while t < self.timeStep:
             ray = np.array([particle.getPos(), particle.getVelocity()/particle.getSpeed()])
+            distances = np.empty(self.nComp)
+            maxDistance = particle.getSpeed()*(self.timeStep - t)
             for c in range(self.nComp):
-                self.intersections[c] = self.compartments[c].findIntersection(ray, particle.getSpeed()*(self.timeStep - t))
-                if type(self.intersections[c]) == np.ndarray:
-                    self.reachTimes[c] = np.linalg.norm(self.intersections[c] - particle.getPos())/particle.getSpeed()
-                else:
-                    self.reachTimes[c] = math.inf
-            firstIndex = np.argmin(self.reachTimes)
-            reachTime, compartment = self.reachTimes[firstIndex], self.compartments[firstIndex]
+                distances[c] = self.compartments[c].findIntersection(ray, maxDistance)
+            firstIndex = np.argmin(distances)
+            compartment = self.compartments[firstIndex]
+            reachTime = distances[firstIndex]/particle.getSpeed()
             
             if t + reachTime + self.timeTolerance < self.timeStep:
                 # if there is an intersection
                 oldPos = particle.getPos().copy()
                 particle.move(reachTime)
                 preCollidePos = particle.getPos().copy()
-                compartment.collide(particle, oldPos, self.intersections[firstIndex], self)
+                compartment.collide(particle, oldPos, ray[0] + distances[firstIndex]*ray[1], self)
                 if calcData and (preCollidePos != particle.getPos()).any():
                     self.positions[particleIndex].append(preCollidePos)
                 particle.move(self.timeTolerance) #moving to avoid ray origin intersecting with compartments on next iteration
@@ -173,36 +167,3 @@ class Simulation():
                     stepLengths[p].append(d)
                     d = 0
         return stepLengths
-
-    def getEndPositions(self):
-        if type(self.endPositions) != np.array:
-            self.endPositions = np.array([particle.getTruePos() for particle in self.particles])
-        return self.endPositions
-        
-    def getDistances(self):
-        if type(self.distances) != np.array:
-            self.distances = np.array([np.linalg.norm(disp) for disp in self.getDisplacements()])
-        return self.distances
-        
-    def getDisplacements(self):
-        if type(self.displacements) != np.array:
-            endPos = np.array([particle.getTruePos() for particle in self.particles])
-            self.displacements = endPos - self.startingPositions
-        return self.displacements
-
-    def getAvgDisplacements(self):
-        return np.average(self.getDisplacements(), axis=0)
-
-    def getSGPSignal(self, qVector, real=False):
-        #if self.signal == None:
-        res = 0
-        disp = self.getDisplacements()
-        if real:
-            for p in range(self.nPart):
-                if disp[p][0] > 0:
-                    res += 2*np.cos(np.dot(disp[p], qVector))*self.particles[p].getSignal()
-        else:
-            for p in range(self.nPart):
-                res += cmath.exp(1j*np.dot(disp[p], qVector))*self.particles[p].getSignal()
-        return abs(res)/self.nPart
-        #return self.signal

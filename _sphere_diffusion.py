@@ -9,6 +9,7 @@ from Environment import Environment
 from Simulation import Simulation
 from Sphere import Sphere
 from Util import Util
+from SimulationParallel import SimulationParallel
 
 def runSim(i, t, r, plotHist):
     startTime = time.time()
@@ -23,6 +24,9 @@ def runSim(i, t, r, plotHist):
     sim = Simulation(n, timeStep, part, env, [Sphere(0, 0, 0, T2, D, 0, radius)])
     #sim = Simulation(n, timeStep, part, env)
     sim.run(seed=None, calcData=False)
+    sim = sim.getResults()
+    print("number of particles", len(sim.getDistances()))
+    #print("distances", sim.getDistances())
 
     #kolmogorov-smirnov
     print("{diffusionTime}ms diffusion time ({t}/{totDt}), {nPart} particles and {n} steps ({i}/{totStep}), run {r}/{nRuns}:"
@@ -52,44 +56,45 @@ def runSim(i, t, r, plotHist):
     #print("numer:", np.average(np.power(sim.getDistances(), 2)))
     #print("theor:", 6*D*diffusionTime)
 
-nRuns = 2
-diffusionTimes = [2, 3, 10] #ms
-totalSteps = int(1e4)
-nStep = [2, 4, 8, 16, 32, 50, 100, 250, 500, 1000] #dividers of 100 000
-#nStep = [6, 7, 8, 9, 10, 12, 16, 20, 35, 50]
-#nStep = [8, 4, 5, 6, 7, 8]
-D = 2 #um2/ms
-radius = 8 #um
-T2 = 1 #irrelevant for this test
+if __name__ == '__main__':
+    nRuns = 1
+    diffusionTimes = [2, 3, 10] #ms
+    totalSteps = int(1e4)
+    nStep = [2, 4, 8, 16, 32, 50, 100, 250, 500, 1000] #dividers of 100 000
+    #nStep = [6, 7, 8, 9, 10, 12, 16, 20, 35, 50]
+    #nStep = [8, 4, 5, 6, 7, 8]
+    D = 2 #um2/ms
+    radius = 8 #um
+    T2 = 1 #irrelevant for this test
 
-errors = np.zeros((len(diffusionTimes), len(nStep), nRuns))
-pvalues = np.zeros((len(diffusionTimes), len(nStep), nRuns))
+    errors = np.zeros((len(diffusionTimes), len(nStep), nRuns))
+    pvalues = np.zeros((len(diffusionTimes), len(nStep), nRuns))
 
-for t in range(len(diffusionTimes)):
-    diffusionTime = diffusionTimes[t]
-    truePDF = Util.getPDF_sphere(D, diffusionTime, radius, 500, 5)
-    trueCDF = Util.getCDF_sphere(D, diffusionTime, radius, 500, 5)
+    for t in range(len(diffusionTimes)):
+        diffusionTime = diffusionTimes[t]
+        truePDF = Util.getPDF_sphere(D, diffusionTime, radius, 500, 5)
+        trueCDF = Util.getCDF_sphere(D, diffusionTime, radius, 500, 5)
 
-    points = np.linspace(0, 1.1*radius, 500)
-    distribPoints = [truePDF(p) for p in points]
-    for i in range(len(nStep)):
-        for r in range(nRuns):
-            runSim(i, t, r, False)
+        points = np.linspace(0, 1.1*radius, 500)
+        distribPoints = [truePDF(p) for p in points]
+        for i in range(len(nStep)):
+            for r in range(nRuns):
+                runSim(i, t, r, True)
 
-#final plot
-print("ERRORS:", errors)
-print("PVALUES:", pvalues)
-averageErrors = np.average(errors, axis=2)
-stdDevs = np.std(errors, axis = 2)
-print("AVERAGE ERRORS:", averageErrors)
-colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
-for t in range(len(diffusionTimes)):
-    #plt.scatter(nStep, averageErrors[t,:], color = colors[t])
-    plt.errorbar(nStep, averageErrors[t,:], stdDevs[t,:], fmt="o", color = colors[t], ecolor = colors[t])
-plt.xscale("log")
-plt.xlabel("Number of steps")
-plt.ylabel("Supremum distance between exact and empirical CDFs")
-plt.legend(["Diffusion time = {diffusionTime}ms".format(diffusionTime=dt) for dt in diffusionTimes])
-plt.title("Random walk simulation of diffusion in an impermeable sphere for different diffusion times and numbers of steps\n"
-          "particles x steps = {totalSteps}, {nRuns} run average".format(totalSteps=totalSteps, nRuns=nRuns))
-plt.show()
+    #final plot
+    print("ERRORS:", errors)
+    print("PVALUES:", pvalues)
+    averageErrors = np.average(errors, axis=2)
+    stdDevs = np.std(errors, axis = 2)
+    print("AVERAGE ERRORS:", averageErrors)
+    colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
+    for t in range(len(diffusionTimes)):
+        #plt.scatter(nStep, averageErrors[t,:], color = colors[t])
+        plt.errorbar(nStep, averageErrors[t,:], stdDevs[t,:], fmt="o", color = colors[t], ecolor = colors[t])
+    plt.xscale("log")
+    plt.xlabel("Number of steps")
+    plt.ylabel("Supremum distance between exact and empirical CDFs")
+    plt.legend(["Diffusion time = {diffusionTime}ms".format(diffusionTime=dt) for dt in diffusionTimes])
+    plt.title("Random walk simulation of diffusion in an impermeable sphere for different diffusion times and numbers of steps\n"
+              "particles x steps = {totalSteps}, {nRuns} run average".format(totalSteps=totalSteps, nRuns=nRuns))
+    plt.show()
