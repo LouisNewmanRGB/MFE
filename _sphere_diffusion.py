@@ -5,7 +5,7 @@ from Validation import Validation
 if __name__ == '__main__':
     t0 = time.time()
     nRuns = 1
-    diffusionTimes = [100] #[100, 3]#, 10] #ms
+    diffusionTimes = [2] #[100, 3]#, 10] #ms
     totalSteps = int(1e5)
     nStep = [8] #, 2, 4, 8, 16]#, 32, 50, 100, 250, 500, 1000] #dividers of 100 000
     #nStep = [6, 7, 8, 9, 10, 12, 16, 20, 35, 50]

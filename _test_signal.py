@@ -1,38 +1,50 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.special
 
 from Util import Util
 
-"""
-points = np.linspace(0, 1.5, 500)[1:]
+radius = 8
+nNumber = 4
+nt = 5
+pointsTest = np.linspace(0, 21, 500)[1:]
 
-#def f(qR):
-#    return 9*(qR*np.cos(qR) - np.sin(qR))**2 / qR**6
-
-f = Util.getSignal_sphere(8)
-
-plt.plot(points, f(points))
-plt.yscale("log")
-plt.show()
-"""
-'''
-x = [0, 1, 2]
-y = x
-yerr = [1, 1, 1]
-plt.errorbar(x, y, yerr, color="red", ecolor="green")
+for n in range(nNumber):
+    plt.plot(pointsTest, scipy.special.spherical_jn(n, pointsTest, derivative=True))
+#plt.plot(pointsTest, scipy.special.spherical_jn(n, pointsTest, derivative=False), color="red")
+#xPoints = (2.*np.arange(1,nt+n+1)-1)*np.pi/2
+plt.legend(list(range(nNumber)))
+xPoints2 = np.arange(1,nt+nNumber+1)*np.pi
+xPoints = Util.genAlphaList(nt, nt, radius)*radius
+plt.scatter(xPoints, np.zeros(len(xPoints)), color="black")
+#plt.scatter(xPoints2, np.zeros(len(xPoints2)), color="red")
 plt.grid()
 plt.show()
-'''
 
-
-D = 2
-diffusionTime = 2
+points = np.linspace(0, 1.5, 500)[1:]
 radius = 8
-print("start")
-truePDF = Util.getPDF_sphere(D, diffusionTime, radius, 500, 5)
-trueCDF = Util.getCDF_sphere(D, diffusionTime, radius, 500, 5)
+D = 2
+t = 20
+nNumber = 10
+zeroNumber = 10
 
-pdfPointsX = np.linspace(0, 1.1*radius, 500)
-#pdfPointsY = [truePDF(p) for p in pdfPointsX]
-pdfPointsY = truePDF(pdfPointsX)
-print("done")
+qStarPoints = np.linspace(0, 3.6, 500)[1:]
+for tStar in [0.05, 0.1, 0.2, 0.5, 1]:
+    fStar = Util.getSignal_sphere_red(tStar, nNumber, zeroNumber)
+    #fStar = Util.getSignal_cylinder(tStar, nNumber, zeroNumber)
+    #fStar = Util.getSignal_plane(tStar, 100)
+    plt.plot(qStarPoints, fStar(qStarPoints))
+plt.yscale("log")
+plt.grid()
+plt.show()
+
+
+f = Util.getSignal_sphere_inf(radius)
+g = Util.getSignal_sphere_fin(radius, D, t, nNumber, zeroNumber)
+#h = Util.getSignal_sphere_2(radius, D, t, 10*nNumber, 10*zeroNumber)
+
+plt.plot(points, f(points), color="red")
+plt.plot(points, g(points), color="green")
+#plt.plot(points, h(points), color="blue")
+plt.yscale("log")
+plt.show()

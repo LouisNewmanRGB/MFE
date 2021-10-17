@@ -6,6 +6,7 @@ class SimulationResults():
     def __init__(self, startingPositions, particles):
         self.startingPositions = startingPositions
         self.particles = particles
+        self.nPart = len(self.particles)
 
         self.displacements = None
         self.endPositions = None
@@ -40,7 +41,9 @@ class SimulationResults():
                 if disp[p][0] > 0:
                     res += 2*np.cos(np.dot(disp[p], qVector))*self.particles[p].getSignal()
         else:
-            for p in range(self.nPart):
-                res += cmath.exp(1j*np.dot(disp[p], qVector))*self.particles[p].getSignal()
+            #for p in range(self.nPart):
+            #    res += cmath.exp(1j*np.dot(disp[p], qVector))*self.particles[p].getSignal()
+            T2Signal = [p.getSignal() for p in self.particles]
+            res = np.dot( np.exp(1j*np.matmul(disp, qVector)), T2Signal)
         return abs(res)/self.nPart
         #return self.signal

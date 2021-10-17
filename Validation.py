@@ -52,8 +52,8 @@ class Validation():
 
         #kolmogorov-smirnov
         print(printMessage)
-        test = scipy.stats.kstest(sim.getDistances(), trueCDF)
         print("Computation time: {compTime}s".format(compTime = time.time() - startTime))
+        test = scipy.stats.kstest(sim.getDistances(), trueCDF)
         print("Kolmogorov-Smirnov test Statistic:", test.statistic)
         print("Kolmogorov-Smirnov test pvalue:", test.pvalue, "\n")
 
@@ -236,3 +236,71 @@ class Validation():
                         .format(diffusionTime=diffusionTime, nPart=nPart, n=nStep, radius=radius, r=r+1, nRuns=nRuns)
                     errors[t, i, r] = Validation.run1Sim(sim, printMessage, histogramTitle, trueCDF, pdfPointsX, pdfPointsY, plotHist)
         return errors
+
+    def run1SimSignal(sim, printMessage, histogramTitle, trueCDF, pdfPointsX, pdfPointsY, plotHist, qPoints):
+        startTime = time.time()
+        sim.run(seed=None, calcData=False)
+        sim = sim.getResults()
+        print("number of particles", len(sim.getDistances()))
+        #print("distances", sim.getDistances())
+
+        print(printMessage)
+        print("Computation time: {compTime}s".format(compTime = time.time() - startTime))
+
+        #signal calculations:
+        simulatedSignal = np.empty(len(qPoints))
+        simulatedSignalReal = np.empty(len(qPoints))
+        print("Average displacement vector:", sim.getAvgDisplacements())
+        for q in range(len(qPoints)):
+            qVec = np.array([qPoints[q], 0, 0])
+            simulatedSignal[q] = sim.getSGPSignal(qVec, real=False)
+            simulatedSignalReal[q] = sim.getSGPSignal(qVec, real=True)
+        return np.array([simulatedSignal, simulatedSignalReal])
+
+    def convSignalFinalPlot(signals, diffusionTimes, radius, D, qPoints, plotTitle):
+        averageSignals = np.average(signals, axis=1)
+        #colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
+        theoreticalInfinite = Util.getSignal_sphere_inf(radius)
+        plt.plot(qPoints, theoreticalInfinite(qPoints), color="black")
+        for t in range(len(diffusionTimes)):
+            dt = diffusionTimes[t]
+            theoreticalSignal = Util.getSignal_sphere_fin(radius, D, dt, 10, 10)
+            simulatedSignal = averageSignals[t, 0, :]
+            simulatedSignalReal = averageSignals[t, 1, :]
+            plt.plot(qPoints, theoreticalSignal(qPoints), color="r")#colors[t], marker=".")
+            plt.plot(qPoints, simulatedSignal, color="g")#colors[t], marker="o")
+            plt.plot(qPoints, simulatedSignalReal, color="b")#colors[t], marker="v")
+        plt.legend(["Theoretical signal for an infinite diffusion time", "Theoretical signal", "Simulated signal", "Simulated signal (2x real part)"])
+        plt.xlabel("q=gamma*G*delta [um-1]")
+        plt.ylabel("Signal attenuation")
+        plt.title(plotTitle)
+        plt.yscale("log")
+        plt.show()
+
+    def runSphereSignalConv(nRuns, plotHist, diffusionTimes, nStep, nPart, radius, D, T2, qPoints):
+        signals = np.zeros((len(diffusionTimes), nRuns, 2, len(qPoints)))
+
+        for t in range(len(diffusionTimes)):
+            diffusionTime = diffusionTimes[t]
+            truePDF = Util.getPDF_sphere(D, diffusionTime, radius, 500, 5)
+            trueCDF = Util.getCDF_sphere(D, diffusionTime, radius, 1000, 5)
+
+            pdfPointsX = np.linspace(0, 1.1*radius, 500)
+            pdfPointsY = [truePDF(p) for p in pdfPointsX]
+
+            for r in range(nRuns):
+                diffusionTime = diffusionTimes[t]
+                timeStep = diffusionTime / nStep
+                l = (6*D*timeStep)**0.5
+                envSize = 5*radius
+                env = Environment(T2, D, envSize, envSize, envSize)
+                part = [Particle3D(*Util.getRandomDirection()*Util.getRandomQuadratic(radius)) for i in range(nPart)]
+                #part = [Particle3D(0, 0, 0) for i in range(nPart)]
+                sim = Simulation(nStep, timeStep, part, env, [Sphere(0, 0, 0, T2, D, 0, radius)])
+                printMessage = "{diffusionTime}ms diffusion time ({t}/{totDt}), run {r}/{nRuns}:"\
+                    .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), r=r+1, nRuns=nRuns)
+                histogramTitle = "Probability distribution of the distance travelled by a particle (sphere radius = {radius}um)\n"\
+                                 "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}, run {r}/{nRuns}"\
+                    .format(diffusionTime=diffusionTime, nPart=nPart, n=nStep, radius=radius, r=r+1, nRuns=nRuns)
+                signals[t, r, :, :] = Validation.run1SimSignal(sim, printMessage, histogramTitle, trueCDF, pdfPointsX, pdfPointsY, plotHist, qPoints)
+        return signals
