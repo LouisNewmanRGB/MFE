@@ -1,5 +1,4 @@
 import numpy as np
-import cmath
 
 
 class SimulationResults():
@@ -34,16 +33,20 @@ class SimulationResults():
 
     def getSGPSignal(self, qVector, real=False):
         #if self.signal == None:
-        res = 0
         disp = self.getDisplacements()
+        T2Signal = np.array([p.getSignal() for p in self.particles])
         if real:
-            for p in range(self.nPart):
-                if disp[p][0] > 0:
-                    res += 2*np.cos(np.dot(disp[p], qVector))*self.particles[p].getSignal()
+            qNorm = np.linalg.norm(qVector)
+            dispX = disp[:, 0]
+            temp = np.multiply(np.cos(qNorm*dispX), T2Signal) #Xs
+            res = 2*np.sum(np.where(dispX > 0, temp, 0))
+            #for p in range(self.nPart):
+            #    if disp[p][0] > 0:
+            #        res += 2*np.cos(np.dot(disp[p], qVector))*self.particles[p].getSignal()
         else:
             #for p in range(self.nPart):
             #    res += cmath.exp(1j*np.dot(disp[p], qVector))*self.particles[p].getSignal()
-            T2Signal = [p.getSignal() for p in self.particles]
             res = np.dot( np.exp(1j*np.matmul(disp, qVector)), T2Signal)
+            #res = res.imag
         return abs(res)/self.nPart
         #return self.signal

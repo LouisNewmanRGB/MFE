@@ -2,6 +2,7 @@ import time
 import numpy as np
 
 from Validation import Validation
+from Util import Util
 
 if __name__ == '__main__':
     t0 = time.time()
@@ -15,12 +16,13 @@ if __name__ == '__main__':
     nStep = 8
     radius = 8 #um
     T2 = np.inf #no T2 relaxation
-    plotHist = True
+    plotHistType = "positions_norm"
     qPoints = np.linspace(0, 1.5, 101)[1:]
 
     #errors = Validation.runParallel(nRuns, plotHist, Validation.runSphereConv, [diffusionTimes, nStep, nParts, radius, D, T2])
-    signals = Validation.runSphereSignalConv(nRuns, plotHist, diffusionTimes, nStep, nPart, radius, D, T2, qPoints)
+    signals = Validation.runSphereSignalConv(nRuns, plotHistType, diffusionTimes, nStep, nPart, radius, D, T2, qPoints)
     print("Total time", time.time() - t0)
     plotTitle = "MRI signal attenuation in an impermeable sphere of radius {radius}um for different diffusion times\n" \
                 "({nPart} particles, {nStep} time steps, {nRuns} run average)".format(radius = radius, nPart=nPart, nStep=nStep, nRuns=nRuns)
-    Validation.convSignalFinalPlot(signals, diffusionTimes, radius, D, qPoints, plotTitle)
+    theoreticalSignals = [Util.getSignal_sphere_fin(radius, D, dt, 10, 10) for dt in diffusionTimes] + [Util.getSignal_sphere_inf(radius)]
+    Validation.convSignalFinalPlot(signals, diffusionTimes, D, qPoints, plotTitle, theoreticalSignals)
