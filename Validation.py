@@ -253,16 +253,19 @@ class Validation():
                 positions = sim.getEndPositions()[:, 0] #Xs
             elif plotHistType == "positions_norm":
                 positions = np.linalg.norm(sim.getEndPositions(), axis=1)
+            elif plotHistType == "displacements_x":
+                positions = sim.getDisplacements()[:, 0]
             else:
                 print("Error: invalid data requested for histogram")
             bw = 2*scipy.stats.iqr(positions, rng=(25, 75))/(len(positions))**(1/3)
-            nBins = int((np.max(positions) - np.min(sim.getDistances()))/bw)
+            nBins = int((np.max(positions) - np.min(positions))/bw)
             plt.hist(positions, bins=nBins, density = True, stacked=True)
             plt.plot(pdfPointsX, pdfPointsY, color = 'red')
             plt.legend(["Expected probability density function", "Random walk results histogram"])
             plt.xlabel("Distance travelled [um]")
             plt.ylabel("[um-1]")
             plt.title(histogramTitle)
+            plt.grid()
             plt.show()
 
         #signal computations:

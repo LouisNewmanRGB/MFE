@@ -7,10 +7,10 @@ from Simulation import Simulation
 from Planes import Planes
 from Util import Util
 
-nPart = 100
+nPart = 2
 nStep = 3
 #timeStep = 10/nStep #ms
-timeStep = 1
+timeStep = 10
 D = 2 #um2/ms
 l = (6*D*timeStep)**0.5
 envSize = 5*l

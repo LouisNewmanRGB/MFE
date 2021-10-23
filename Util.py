@@ -1,6 +1,5 @@
 import numpy as np
 import random
-import math
 import scipy.stats
 import scipy.special
 import scipy.optimize
@@ -15,9 +14,10 @@ class Util():
             return(np.max(np.abs(listOfLists)))
 
     def getRandomDirection():
-        theta = random.random() * 2*math.pi
-        phi = random.random() * math.pi
-        return np.array([math.sin(phi) * math.cos(theta), math.sin(phi) * math.sin(theta), math.cos(phi)])
+        phi = np.random.uniform(0,np.pi*2)
+        costheta = np.random.uniform(-1,1)
+        theta = np.arccos( costheta )
+        return np.array([np.sin( theta) * np.cos( phi ), np.sin( theta) * np.sin( phi ), np.cos( theta )])
 
     def getRandomU(size):
         return (random.random()-0.5)*size
