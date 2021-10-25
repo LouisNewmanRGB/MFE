@@ -269,13 +269,10 @@ class Validation():
             plt.show()
 
         #signal computations:
-        simulatedSignal = np.empty(len(qPoints))
-        simulatedSignalReal = np.empty(len(qPoints))
         print("Average displacement vector:", sim.getAvgDisplacements())
-        for q in range(len(qPoints)):
-            qVec = np.array([qPoints[q], 0, 0])
-            simulatedSignal[q] = sim.getSGPSignal(qVec, real=False)
-            simulatedSignalReal[q] = sim.getSGPSignal(qVec, real=True)
+        qVectors = np.array([[q, 0, 0] for q in qPoints])
+        simulatedSignal = sim.getSGPSignal(qVectors, real=False)
+        simulatedSignalReal = sim.getSGPSignal(qVectors, real=True)
         return np.array([simulatedSignal, simulatedSignalReal])
 
     def convSignalFinalPlot(signals, diffusionTimes, D, qPoints, plotTitle, theoreticalSignals):

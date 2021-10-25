@@ -31,7 +31,8 @@ class SimulationResults():
     def getAvgDisplacements(self):
         return np.average(self.getDisplacements(), axis=0)
 
-    def getSGPSignal(self, qVector, real=False):
+    def getSGPSignalSlow(self, qVector, real=False):
+        """"slower version"""
         #if self.signal == None:
         disp = self.getDisplacements()
         T2Signal = np.array([p.getSignal() for p in self.particles])
@@ -49,4 +50,17 @@ class SimulationResults():
             res = np.dot( np.exp(1j*np.matmul(disp, qVector)), T2Signal)
             #res = res.imag
         return abs(res)/self.nPart
+        #return self.signal
+
+    def getSGPSignal(self, qVectors, real=False):
+        #if self.signal == None:
+        disp = self.getDisplacements()
+        T2Signal = np.array([p.getSignal() for p in self.particles])
+        if real:
+            exponentials = np.cos(np.matmul(qVectors, disp.T))
+        else:
+            exponentials = np.exp(1j*np.matmul(qVectors, disp.T))
+
+        expTimesT2 = np.multiply([T2Signal]*len(qVectors), exponentials)
+        return np.abs(np.average(expTimesT2, axis=1))
         #return self.signal
