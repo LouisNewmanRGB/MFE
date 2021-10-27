@@ -7,7 +7,7 @@ from Util import Util
 if __name__ == '__main__':
     t0 = time.time()
     nRuns = 1
-    diffusionTimes = [5]#, 2, 3, 10] #ms
+    diffusionTimes = [3, 10, 20] #ms
     #nParts = [10000, 100, 1000, 10000]#, 100000]
     nPart = 10000
     D = 2 #um2/ms

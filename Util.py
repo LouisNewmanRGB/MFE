@@ -156,6 +156,15 @@ class Util():
                    np.sum([(1-(-1)**n * np.cos(qa) ) * np.exp(-(n*np.pi)**2 * tStar) / ((n*np.pi)**2 - qa**2)**2 for n in range(1,nNumber+1)], axis=0)
         return s
 
+    def getSignal_cylinder_fin(radius, D, t, nNumber, zeroNumber):
+        def s(q):
+            qR = q*radius
+            kronecker = scipy.signal.unit_impulse(nNumber)
+            return (2*scipy.special.jv(1, qR))**2 / qR**2 + 8*qR**2 * np.sum([(scipy.special.jvp(n, qR))**2 / (1 + kronecker[n]) * \
+                    np.sum([alphaNM**2 * np.exp(-alphaNM**2 *D*t/radius**2) / ( (alphaNM**2 - n**2) * (alphaNM**2 - qR**2)**2) \
+                            for alphaNM in scipy.special.jnp_zeros(n, zeroNumber)], axis=0) for n in range(nNumber)], axis=0)
+        return s
+
     def getSignal_cylinder_red(tStar, nNumber, zeroNumber):
         def s(qStar):
             qR = np.pi*qStar
