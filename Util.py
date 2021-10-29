@@ -7,6 +7,12 @@ import scipy.signal
 
 class Util():
 
+    pickleDir = "numpy saves"
+
+    def getFilePath(func):
+        funcName = str(func).split()[1].split(".")[1]
+        return "./" + Util.pickleDir + "/" + funcName
+
     def recursiveMax(listOfLists):
         if type(listOfLists[0]) == list:
             return np.max([Util.recursiveMax(e) for e in listOfLists])
@@ -109,6 +115,12 @@ class Util():
         def f(x):
             return ( np.heaviside(x+a/2, 1) - np.heaviside(x-a/2, 1) )/a
         return f
+
+    ####################Root mean square displacements#################
+    def RMSD_sphere(radius, D, t, nTerms, nIter):
+        betaList = Util.Jnp_zeros(1,nTerms)[-1]
+        msd = 6*radius**2 / 5 - 12*radius**2 * np.sum([np.exp(-beta**2 *D*t/radius**2) / (beta**4 - 2*beta**2) for beta in betaList])
+        return msd**0.5
 
     ####################Theoretical SGP signals########################
     def getSignal_sphere_inf(radius):
