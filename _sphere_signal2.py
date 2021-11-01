@@ -6,24 +6,24 @@ from Util import Util
 
 if __name__ == '__main__':
     t0 = time.time()
-    nRuns = 1
-    diffusionTimes = [3, 10, 20] #ms
-    #nParts = [10000, 100, 1000, 10000]#, 100000]
-    nPart = 10000
+    nRuns = 8
+    diffusionTimes = [3, 10, 100] #[2, 5, 25] #ms
+    nParts = [100, 1000, 10000]#, 100000]
+    nStep = 16
     D = 2 #um2/ms
-    #magicl2 = 3
-    #nStep = int(np.rint(6*D*diffusionTimes[0]/magicl2))
-    nStep = 8
     radius = 8 #um
     T2 = np.inf #no T2 relaxation
-    plotHistType = "positions_norm"
-    #plotHistType = "displacements_x"
-    qPoints = np.linspace(0, 1.5, 101)[1:]
+    plotGraph = False
+    qPoints = np.linspace(0, 0.4, 101)[1:]
+    saveFileName = "sphere_conv_16TS_8R_3_10_50"
 
-    #errors = Validation.runParallel(nRuns, plotHist, Validation.runSphereConv, [diffusionTimes, nStep, nParts, radius, D, T2])
-    signals = Validation.runSphereSignalConv(nRuns, plotHistType, diffusionTimes, nStep, nPart, radius, D, T2, qPoints)
+    #results = Validation.runParallel(nRuns, Validation.runValidation, [diffusionTimes, (nParts, nStep), "convergence", "sphere_uniform", D, T2, radius], saveFileName=saveFileName)
+    #results = Validation.runValidation(nRuns, diffusionTimes, (nParts, nStep), "convergence", "sphere_uniform", D, T2, radius)
+    results = np.load(Util.getFilePath(saveFileName)+".npy", allow_pickle=True)
+    print(results.shape)
+
     print("Total time", time.time() - t0)
-    plotTitle = "MRI signal attenuation in an impermeable sphere of radius {radius}um for different diffusion times\n" \
-                "({nPart} particles, {nStep} time steps, {nRuns} run average)".format(radius = radius, nPart=nPart, nStep=nStep, nRuns=nRuns)
-    theoreticalSignals = [Util.getSignal_sphere_fin(radius, D, dt, 10, 10) for dt in diffusionTimes] + [Util.getSignal_sphere_inf(radius)]
-    Validation.convSignalFinalPlot(signals, diffusionTimes, D, qPoints, plotTitle, theoreticalSignals)
+    plotTitle = "Random walk simulation of diffusion in an impermeable sphere for different diffusion times and numbers of particles\n"\
+                "(Number of steps = {n}, {nRuns} run average)".format(n=nStep, nRuns=nRuns)
+    #Validation.signalPlot(results, plotGraph, plotTitle, qPoints, nRuns, diffusionTimes, (nParts, nStep), "convergence", "sphere_uniform", D, radius)
+    Validation.averageSignalPlot(results, plotGraph, plotTitle, qPoints, nRuns, diffusionTimes, (nParts, nStep), "convergence", "sphere_uniform", D, radius)

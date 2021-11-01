@@ -3,6 +3,26 @@ import matplotlib.pyplot as plt
 
 from Util import Util
 
+
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+
+from Util import Util
+
+points = np.linspace(0, 50, 50)
+D = 2
+a = 8
+
+data = np.empty(len(points))
+for t in range(len(points)):
+    data[t] = Util.RMSD_planes(a, D, points[t], 20)
+
+plt.plot(points, data)
+plt.grid()
+plt.show()
+"""
+
 a = 8
 #alphaList = np.array([0, 4.4934, 7.7253, 10.9041, 14.0662, 17.2208])/a
 

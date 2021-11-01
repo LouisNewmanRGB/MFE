@@ -10,7 +10,10 @@ class Util():
     pickleDir = "numpy saves"
 
     def getFilePath(func):
-        funcName = str(func).split()[1].split(".")[1]
+        if type(func) == str:
+            funcName = func
+        else:
+            funcName = str(func).split()[1].split(".")[1]
         return "./" + Util.pickleDir + "/" + funcName
 
     def recursiveMax(listOfLists):
@@ -66,11 +69,12 @@ class Util():
         """derivative of the spherical bessel function of order n"""
         return scipy.special.spherical_jn(n, r, derivative=True)
 
-    def Jnp_zeros(n,nt):
-        """calculate the zeros of the derivative of the spherical bessel function of order n"""
+    def Jnp_zeros(n,nt, nIter):
+        """calculate the nt first zeros of the derivative of the spherical bessel function of order n"""
+        #nIter is the number of iterations in the algorithm that generates the roots of x=tan(x)
         zerosj = np.zeros((n+1, nt))
-        zerosj[0] = Util.genBetaList(nt+1, nt)[1:]
-        points = Util.genBetaList(nt+n, nt)
+        zerosj[0] = Util.genBetaList(nt+1, nIter)[1:]
+        points = Util.genBetaList(nt+n, nIter)
         points[0] = 0.01
         racines = np.zeros(nt+n)
         for i in range(1,n+1):
@@ -118,8 +122,13 @@ class Util():
 
     ####################Root mean square displacements#################
     def RMSD_sphere(radius, D, t, nTerms, nIter):
-        betaList = Util.Jnp_zeros(1,nTerms)[-1]
+        betaList = Util.Jnp_zeros(1, nTerms, nIter)[-1]
         msd = 6*radius**2 / 5 - 12*radius**2 * np.sum([np.exp(-beta**2 *D*t/radius**2) / (beta**4 - 2*beta**2) for beta in betaList])
+        return msd**0.5
+
+    def RMSD_planes(spacing, D, t, nTerms):
+        msd = spacing**2 / 6 - (16/np.pi**4)*spacing**2 *\
+               np.sum([np.exp(-np.pi**2 *(2*p + 1)**2 * D*t/spacing**2) / (2*p+1)**4 for p in range(nTerms)], axis = 0)
         return msd**0.5
 
     ####################Theoretical SGP signals########################
@@ -129,8 +138,8 @@ class Util():
             return 9*(qR*np.cos(qR) - np.sin(qR))**2 / qR**6
         return s
 
-    def getSignal_sphere_fin(radius, D, t, nNumber, zeroNumber):
-        jpZeros = Util.Jnp_zeros(nNumber,zeroNumber)
+    def getSignal_sphere_fin(radius, D, t, nNumber, zeroNumber, nIter):
+        jpZeros = Util.Jnp_zeros(nNumber, zeroNumber, nIter)
         def s(q):
             qR = q*radius
             return (3*scipy.special.spherical_jn(1, qR))**2 / qR**2 \
@@ -139,8 +148,8 @@ class Util():
                             for alphaNM in jpZeros[n] ], axis=0) for n in range(nNumber) ], axis=0)
         return s
 
-    def getSignal_sphere_red(tStar, nNumber, zeroNumber):
-        jpZeros = Util.Jnp_zeros(nNumber,zeroNumber)
+    def getSignal_sphere_red(tStar, nNumber, zeroNumber, nIter):
+        jpZeros = Util.Jnp_zeros(nNumber,zeroNumber, nIter)
         def s(qStar):
             qR = np.pi*qStar
             return (3*scipy.special.spherical_jn(1, qR))**2 / qR**2 + 6*qR**2 * np.sum([(scipy.special.spherical_jn(n, qR, derivative=True))**2 * \
@@ -168,20 +177,20 @@ class Util():
                    np.sum([(1-(-1)**n * np.cos(qa) ) * np.exp(-(n*np.pi)**2 * tStar) / ((n*np.pi)**2 - qa**2)**2 for n in range(1,nNumber+1)], axis=0)
         return s
 
-    def getSignal_cylinder_fin(radius, D, t, nNumber, zeroNumber):
+    def getSignal_cylinder_fin(radius, D, t, nNumber, zeroNumber, nIter):
         def s(q):
             qR = q*radius
             kronecker = scipy.signal.unit_impulse(nNumber)
             return (2*scipy.special.jv(1, qR))**2 / qR**2 + 8*qR**2 * np.sum([(scipy.special.jvp(n, qR))**2 / (1 + kronecker[n]) * \
                     np.sum([alphaNM**2 * np.exp(-alphaNM**2 *D*t/radius**2) / ( (alphaNM**2 - n**2) * (alphaNM**2 - qR**2)**2) \
-                            for alphaNM in scipy.special.jnp_zeros(n, zeroNumber)], axis=0) for n in range(nNumber)], axis=0)
+                            for alphaNM in scipy.special.jnp_zeros(n, zeroNumber, nIter)], axis=0) for n in range(nNumber)], axis=0)
         return s
 
-    def getSignal_cylinder_red(tStar, nNumber, zeroNumber):
+    def getSignal_cylinder_red(tStar, nNumber, zeroNumber, nIter):
         def s(qStar):
             qR = np.pi*qStar
             kronecker = scipy.signal.unit_impulse(nNumber)
             return (2*scipy.special.jv(1, qR))**2 / qR**2 + 8*qR**2 * np.sum([(scipy.special.jvp(n, qR))**2 / (1 + kronecker[n]) * \
                     np.sum([alphaNM**2 * np.exp(-alphaNM**2 *4*tStar) / ( (alphaNM**2 - n**2) * (alphaNM**2 - qR**2)**2) \
-                            for alphaNM in scipy.special.jnp_zeros(n, zeroNumber)], axis=0) for n in range(nNumber)], axis=0)
+                            for alphaNM in scipy.special.jnp_zeros(n, zeroNumber, nIter)], axis=0) for n in range(nNumber)], axis=0)
         return s

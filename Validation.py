@@ -1,25 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 import scipy.stats
 import time
 import multiprocessing
 
-from Particle3D import Particle3D
-from Environment import Environment
-from Simulation import Simulation
-from Sphere import Sphere
 from Util import Util
+from SimulationResults import SimulationResults
+from ValidationCore import ValidationCore
 
 class Validation():
 
-    def runProcess(result_dict, number, rpp, serialFunction, serialArgs):
-        print("Starting process", number)
-        results = serialFunction(rpp, *serialArgs)
-        print("Finished process", number)
-        result_dict[number] = results
-
-    def runParallel(nRuns, serialFunction, serialArgs, nProcess=8):
+    def runParallel(nRuns, serialFunction, serialArgs, nProcess=8, saveFileName=None):
         rpp = nRuns // nProcess #runs per process
         print("starting {n} runs".format(n=rpp*nProcess))
 
@@ -27,7 +18,7 @@ class Validation():
         result_dict = manager.dict()
         processes = []
         for number in range(nProcess):
-            proc = multiprocessing.Process(target=Validation.runProcess, args=(result_dict, number, rpp, serialFunction, serialArgs,))
+            proc = multiprocessing.Process(target=ValidationCore.runProcess, args=(result_dict, number, rpp, serialFunction, serialArgs,))
             proc.start()
             processes.append(proc)
 
@@ -35,292 +26,198 @@ class Validation():
             proc.join()
 
         results = np.concatenate(tuple([result_dict[n] for n in range(nProcess)]), axis=-1)
-        np.save(Util.getFilePath(serialFunction), results)
+
+        if saveFileName == None:
+            np.save(Util.getFilePath(serialFunction), results)
+        else:
+            np.save(Util.getFilePath(saveFileName), results)
 
         return results
 
-
-    def run1Sim(sim, printMessage, histogramTitle, trueCDF, pdfPointsX, pdfPointsY, plotHist):
-        startTime = time.time()
-        sim.run(seed=None, calcData=False)
-        sim = sim.getResults()
-        print("number of particles", len(sim.getDistances()))
-        #print("distances", sim.getDistances())
-
-        #kolmogorov-smirnov
-        print(printMessage)
-        print("Computation time: {compTime}s".format(compTime = time.time() - startTime))
-        test = scipy.stats.kstest(sim.getDistances(), trueCDF)
-        print("Kolmogorov-Smirnov test Statistic:", test.statistic)
-        print("Kolmogorov-Smirnov test pvalue:", test.pvalue, "\n")
-
-        #histograms
-        if plotHist:
-            bw = 2*scipy.stats.iqr(sim.getDistances(), rng=(25, 75))/(len(sim.getDistances()))**(1/3)
-            nBins = int((np.max(sim.getDistances()) - np.min(sim.getDistances()))/bw)
-            plt.hist(sim.getDistances(), bins=nBins, density = True, stacked=True)
-            plt.plot(pdfPointsX, pdfPointsY, color = 'red')
-            plt.legend(["Expected probability density function", "Random walk results histogram"])
-            plt.xlabel("Distance travelled [um]")
-            plt.ylabel("[um-1]")
-            plt.title(histogramTitle)
-            plt.show()
-
-        return test.statistic
-
-    def comparisonPlot(data, diffusionTimes, nStep, plotTitle, yLabel):
-        averageData = np.average(data, axis=2)
-        stdDevs = np.std(data, axis = 2)
-        colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
-        fig, ax = plt.subplots()
+    def runValidation(nRuns, diffusionTimes, xDataTuple, xDataType, simulationType, D, T2, parameter=None):
+        xData = xDataTuple[0]
+        results = np.empty((len(diffusionTimes), len(xData), nRuns), dtype=SimulationResults)
         for t in range(len(diffusionTimes)):
-            ax.errorbar(nStep, averageData[t,:], stdDevs[t,:], fmt="o", color = colors[t], ecolor = colors[t])
-        plt.xscale("log")
-        if np.all(data > 0):
-            ax.set_ylim(ymin=0)
-        plt.xlabel("Number of steps")
-        plt.ylabel(yLabel)
-        plt.legend(["Diffusion time = {diffusionTime}ms".format(diffusionTime=dt) for dt in diffusionTimes])
-        plt.title(plotTitle)
-        plt.grid()
-        plt.show()
+            diffusionTime = diffusionTimes[t]
+            for i in range(len(xData)):
+                nStep, nPart = ValidationCore.getNStepNPart(xDataTuple, xDataType, i)
+                for r in range(nRuns):
+                    if xDataType == "comparison":
+                        printMessage = "{diffusionTime}ms diffusion time ({t}/{totDt}), {nPart} particles and {n} steps ({i}/{totStep}), run {r}/{nRuns}:"\
+                        .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, n=nStep, i=i+1, totStep=len(xData), r=r+1, nRuns=nRuns)
+                    elif xDataType == "convergence":
+                        printMessage = "{diffusionTime}ms diffusion time ({t}/{totDt}) and {nPart} particles ({i}/{totStep}), run {r}/{nRuns}:"\
+                        .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, i=i+1, totStep=len(xData), r=r+1, nRuns=nRuns)
+                    else:
+                        return print("ERROR: invalid xDataType")
 
-    def compPValuePlot(pValues, diffusionTimes, nStep, plotTitle):
-        colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
-        fig, ax = plt.subplots()
+                    timeStep = Util.getTimeStep(diffusionTime, nStep)
+                    sim = ValidationCore.getSim(nStep, nPart, timeStep, simulationType, D, T2, parameter)
+
+                    startTime = time.time()
+                    sim.run(seed=None, calcData=False)
+                    results[t, i, r] = sim.getResults()
+                    print(printMessage)
+                    print("Computation time: {compTime}s".format(compTime = time.time() - startTime), "\n")
+        return results
+
+    def distributionPlot(simResultArray, plotTitle, plotIntermediary, nRuns, diffusionTimes, xDataTuple, xDataType, simulationType, D, parameter=None):
+        xData = xDataTuple[0]
+        errors = np.zeros((len(diffusionTimes), len(xData), nRuns))
         for t in range(len(diffusionTimes)):
-            ax.scatter(nStep, pValues[t,:], color = colors[t])
-        plt.xscale("log")
-        ax.set_ylim(ymin=0)
-        plt.xlabel("Number of steps")
-        plt.ylabel("p-value")
-        plt.legend(["Diffusion time = {diffusionTime}ms".format(diffusionTime=dt) for dt in diffusionTimes])
-        plt.title(plotTitle)
-        plt.grid()
-        plt.show()
+            diffusionTime = diffusionTimes[t]
 
-    def meanTestCompPlot(data, diffusionTimes, nStep, plotTitle, yLabel):
-        Validation.comparisonPlot(data, diffusionTimes, nStep, plotTitle, yLabel)
-        pValues = np.empty((len(diffusionTimes), len(nStep)))
-        for t in range(len(diffusionTimes)):
-            for i in range(len(nStep)):
-                pValues[t, i] = scipy.stats.ttest_1samp(data[t, i, :], 0).pvalue
-        plotTitleExtra = "\n" + yLabel + ": Student Test for Null Mean"
-        Validation.compPValuePlot(pValues, diffusionTimes, nStep, plotTitle + plotTitleExtra)
-
-    def meanTestCompMD(meanDisps, diffusionTimes, nStep, plotTitle):
-        Validation.meanTestCompPlot(meanDisps, diffusionTimes, nStep, plotTitle, "Norm of Mean Displacement")
-
-    def meanTestCompRMSD(RMSDs, diffusionTimes, plotTitle, nStep, radius, D):
-        data = RMSDs.copy()
-        for t in range(len(diffusionTimes)):
-            expectedMean = Util.RMSD_sphere(radius, D, diffusionTimes[t], 20, 5)
-            data[t, :, :] = data[t, :, :] - expectedMean
-        Validation.meanTestCompPlot(data, diffusionTimes, nStep, plotTitle, "Difference between theoretical and simulated RMSD")
-
-    def diffusionCompPlot(errors, diffusionTimes, nStep, plotTitle):
-        Validation.comparisonPlot(errors, diffusionTimes, nStep, plotTitle, yLabel="Supremum distance between exact and empirical CDFs")
-
-    def signalCompPlot(errors, diffusionTimes, nStep, plotTitle):
-        Validation.comparisonPlot(errors, diffusionTimes, nStep, plotTitle, yLabel="RMSE between exact and empirical SGP signals")
-
-    def convergenceFinalPlot(errors, diffusionTimes, nParts, plotTitle):
-        averageErrors = np.average(errors, axis=2)
-        stdDevs = np.std(errors, axis = 2)
-        for logScale in [False, True]:
-            if logScale:
-                plt.yscale("log")
-                finalPoints = np.array([nParts[0]/10, nParts[-1]*10])
+            if simulationType == "free":
+                truePDF = Util.getPDF(D, diffusionTime)
+                trueCDF = Util.getCDF(D, diffusionTime)
+                pdfPointsX = np.linspace(0, 4 * (6 * D * diffusionTime)**0.5, 500)
+                pdfPointsY = truePDF(pdfPointsX)
+                histogramTitle = "TODO"
+            elif simulationType == "sphere_center":
+                radius = parameter
+                truePDF = Util.getPDF_sphere(D, diffusionTime, radius, 500, 5)
+                trueCDF = Util.getCDF_sphere(D, diffusionTime, radius, 1000, 5)
+                pdfPointsX = np.linspace(0, 1.1*radius, 500)
+                pdfPointsY = [truePDF(p) for p in pdfPointsX]
+                histogramTitle = "TODO"
             else:
-                finalPoints = 10**np.linspace(np.log10(nParts[0]/1.5), np.log10(nParts[-1]*5), 500)
+                print("ERROR: invalid simulationType")
+                return None
 
-            colors = cm.rainbow(np.linspace(0, 1, len(diffusionTimes)))
-            for t in range(len(diffusionTimes)):
-                #plt.scatter(nParts, averageErrors[t,:], color = colors[t])
-                plt.errorbar(nParts, averageErrors[t,:], stdDevs[t,:], fmt="o", color = colors[t], ecolor = colors[t])
-            plt.plot(finalPoints, finalPoints**(-0.5), color = "black")
+            for i in range(len(xData)):
+                for r in range(nRuns):
+                    simResults = simResultArray[t, i, r]
+                    #kolmogorov-smirnov
+                    #print(printMessage)
+                    test = scipy.stats.kstest(simResults.getDistances(), trueCDF)
+                    errors[t, i, r] = test.statistic
+                    #print("Kolmogorov-Smirnov test Statistic:", test.statistic)
+                    #print("Kolmogorov-Smirnov test pvalue:", test.pvalue, "\n")
 
-            plt.xscale("log")
-            plt.xlabel("Number of particles")
-            plt.ylabel("Supremum distance between exact and empirical CDFs")
-            plt.legend(["Theoretical distances\n(n^-1/2 convergence rate)"] +
-                       ["Diffusion time = {diffusionTime}ms".format(diffusionTime=dt) for dt in diffusionTimes])
-            plt.title(plotTitle)
-            plt.show()
+                    #histograms
+                    if plotIntermediary:
+                        bw = 2*scipy.stats.iqr(simResults.getDistances(), rng=(25, 75))/(len(simResults.getDistances()))**(1/3)
+                        nBins = int((np.max(simResults.getDistances()) - np.min(simResults.getDistances()))/bw)
+                        plt.hist(simResults.getDistances(), bins=nBins, density = True, stacked=True)
+                        plt.plot(pdfPointsX, pdfPointsY, color = 'red')
+                        plt.legend(["Expected probability density function", "Random walk results histogram"])
+                        plt.xlabel("Distance travelled [um]")
+                        plt.ylabel("[um-1]")
+                        plt.title(histogramTitle)
+                        plt.show()
 
-    def runSphereComp(nRuns, plotHist, diffusionTimes, nStep, totalSteps, radius, D, T2):
-        errors = np.zeros((len(diffusionTimes), len(nStep), nRuns))
+        yLabel = "Supremum distance between exact and empirical CDFs"
+        ValidationCore.plotDelegator(errors, diffusionTimes, xData, plotTitle, xDataType, yLabel, pValuePlot=False)
 
+    def meanDisplacementPlot(simResultArray, plotTitle, nRuns, diffusionTimes, xDataTuple, xDataType):
+        xData = xDataTuple[0]
+        meanDisp = np.zeros((len(diffusionTimes), len(xData), nRuns))
+        for t in range(len(diffusionTimes)):
+            for i in range(len(xData)):
+                for r in range(nRuns):
+                    simResults = simResultArray[t, i, r]
+                    meanDisp[t, i, r] = np.linalg.norm(simResults.getAvgDisplacements())
+        yLabel = "Norm of Mean Displacement"
+        ValidationCore.plotDelegator(meanDisp, diffusionTimes, xData, plotTitle, xDataType, yLabel, pValuePlot=True)
+
+    def RMSDplot(simResultArray, plotTitle, nRuns, diffusionTimes, xDataTuple, xDataType, simulationType, D, parameter=None):
+        xData = xDataTuple[0]
+        errors = np.zeros((len(diffusionTimes), len(xData), nRuns))
         for t in range(len(diffusionTimes)):
             diffusionTime = diffusionTimes[t]
-            truePDF = Util.getPDF_sphere(D, diffusionTime, radius, 500, 5)
-            trueCDF = Util.getCDF_sphere(D, diffusionTime, radius, 500, 5)
-            pdfPointsX = np.linspace(0, 1.1*radius, 500)
-            pdfPointsY = [truePDF(p) for p in pdfPointsX] #truePDF(pdfPointsX)
-            for i in range(len(nStep)):
+
+            if simulationType == "sphere_uniform":
+                radius = parameter
+                expectedMean = Util.RMSD_sphere(radius, D, diffusionTime, 20)
+            elif simulationType == "planes":
+                spacing = parameter
+                expectedMean = Util.RMSD_planes(spacing, D, diffusionTime, 20)
+            else:
+                return print("ERROR: invalid simulationType")
+
+            for i in range(len(xData)):
                 for r in range(nRuns):
-                    n = nStep[i]
-                    diffusionTime = diffusionTimes[t]
-                    timeStep = Util.getTimeStep(diffusionTime, n)
-                    nPart = int(totalSteps / n)
-                    l = (6*D*timeStep)**0.5
-                    envSize = 5*radius
-                    env = Environment(T2, D, envSize, envSize, envSize)
-                    part = [Particle3D(0, 0, 0) for i in range(nPart)]
-                    sim = Simulation(n, timeStep, part, env, [Sphere(0, 0, 0, T2, D, 0, radius)])
-                    printMessage = "{diffusionTime}ms diffusion time ({t}/{totDt}), {nPart} particles and {n} steps ({i}/{totStep}), run {r}/{nRuns}:"\
-                        .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, n=n, i=i+1, totStep=len(nStep), r=r+1, nRuns=nRuns)
-                    histogramTitle = "Probability distribution of the distance travelled by a particle (sphere radius = {radius}um)\n"\
-                                     "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n} ({totalSteps} particles x steps), run {r}/{nRuns}"\
-                        .format(radius=radius, diffusionTime=diffusionTime, nPart=nPart, n=n, totalSteps=totalSteps, r=r+1, nRuns=nRuns)
+                    simResults = simResultArray[t, i, r]
+                    if simulationType == "sphere_uniform":
+                        errors[t, i, r] = (np.average( simResults.getDistances()**2))**0.5 - expectedMean
+                    else:
+                        errors[t, i, r] = (np.average( simResults.getDisplacements()[:, 0]**2))**0.5 - expectedMean
 
-                    errors[t, i, r] = Validation.run1Sim(sim, printMessage, histogramTitle, trueCDF, pdfPointsX, pdfPointsY, plotHist)
+        yLabel = "Difference between theoretical and simulated RMSD"
+        ValidationCore.plotDelegator(errors, diffusionTimes, xData, plotTitle, xDataType, yLabel, pValuePlot=True)
 
-        return errors
-
-    def runFreeComp(nRuns, plotHist, diffusionTimes, nStep, totalSteps, D, T2):
-        errors = np.zeros((len(diffusionTimes), len(nStep), nRuns))
-
-        for t in range(len(diffusionTimes)):
-            diffusionTime = diffusionTimes[t]
-            truePDF = Util.getPDF(D, diffusionTime)
-            trueCDF = Util.getCDF(D, diffusionTime)
-
-            pdfPointsX = np.linspace(0, 4 * (6 * D * diffusionTime)**0.5, 500)
-            pdfPointsY = truePDF(pdfPointsX)
-            for i in range(len(nStep)):
-                for r in range(nRuns):
-                    n = nStep[i]
-                    diffusionTime = diffusionTimes[t]
-                    timeStep = Util.getTimeStep(diffusionTime, n)
-                    nPart = int(totalSteps / n)
-                    l = (6*D*timeStep)**0.5
-                    envSize = 10*l
-                    env = Environment(T2, D, envSize, envSize, envSize)
-                    part = [Particle3D(Util.getRandomU(envSize),Util.getRandomU(envSize),Util.getRandomU(envSize)) for i in range(nPart)]
-                    sim = Simulation(n, timeStep, part, env)
-                    printMessage = "{diffusionTime}ms diffusion time ({t}/{totDt}), {nPart} particles and {n} steps ({i}/{totStep}), run {r}/{nRuns}:"\
-                        .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, n=n, i=i+1, totStep=len(nStep), r=r+1, nRuns=nRuns)
-                    histogramTitle = "Probability distribution of the distance travelled by a particle\n"\
-                                     "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}, ({totalSteps} particles x steps), run {r}/{nRuns}"\
-                        .format(diffusionTime=diffusionTime, nPart=nPart, n=n, totalSteps=totalSteps, r=r+1, nRuns=nRuns)
-                    errors[t, i, r] = Validation.run1Sim(sim, printMessage, histogramTitle, trueCDF, pdfPointsX, pdfPointsY, plotHist)
-        return errors
-
-    def runFreeConv(nRuns, plotHist, diffusionTimes, nStep, nParts, D, T2):
-        errors = np.zeros((len(diffusionTimes), len(nParts), nRuns))
-
-        for t in range(len(diffusionTimes)):
-            diffusionTime = diffusionTimes[t]
-            truePDF = Util.getPDF(D, diffusionTime)
-            trueCDF = Util.getCDF(D, diffusionTime)
-
-            pdfPointsX = np.linspace(0, 4 * (6 * D * diffusionTime)**0.5, 500)
-            pdfPointsY = truePDF(pdfPointsX)
-            for i in range(len(nParts)):
-                for r in range(nRuns):
-                    nPart = nParts[i]
-                    diffusionTime = diffusionTimes[t]
-                    timeStep = Util.getTimeStep(diffusionTime, nStep)
-                    l = (6*D*timeStep)**0.5
-                    envSize = 10*l
-                    env = Environment(T2, D, envSize, envSize, envSize)
-                    part = [Particle3D(Util.getRandomU(envSize),Util.getRandomU(envSize),Util.getRandomU(envSize)) for i in range(nPart)]
-                    sim = Simulation(nStep, timeStep, part, env)
-                    printMessage = "{diffusionTime}ms diffusion time ({t}/{totDt}) and {nPart} particles ({i}/{totStep}), run {r}/{nRuns}:"\
-                        .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, i=i+1, totStep=len(nParts), r=r+1, nRuns=nRuns)
-                    histogramTitle = "Probability distribution of the distance travelled by a particle\n"\
-                                     "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}, run {r}/{nRuns}"\
-                        .format(diffusionTime=diffusionTime, nPart=nPart, n=nStep, r=r+1, nRuns=nRuns)
-                    errors[t, i, r] = Validation.run1Sim(sim, printMessage, histogramTitle, trueCDF, pdfPointsX, pdfPointsY, plotHist)
-        return errors
-
-    def runSphereConv(nRuns, plotHist, diffusionTimes, nStep, nParts, radius, D, T2):
-        errors = np.zeros((len(diffusionTimes), len(nParts), nRuns))
-
-        for t in range(len(diffusionTimes)):
-            diffusionTime = diffusionTimes[t]
-            truePDF = Util.getPDF_sphere(D, diffusionTime, radius, 500, 5)
-            trueCDF = Util.getCDF_sphere(D, diffusionTime, radius, 1000, 5)
-
-            pdfPointsX = np.linspace(0, 1.1*radius, 500)
-            pdfPointsY = [truePDF(p) for p in pdfPointsX]
-            for i in range(len(nParts)):
-                for r in range(nRuns):
-                    nPart = nParts[i]
-                    diffusionTime = diffusionTimes[t]
-                    timeStep = Util.getTimeStep(diffusionTime, nStep)
-                    l = (6*D*timeStep)**0.5
-                    envSize = 5*radius
-                    env = Environment(T2, D, envSize, envSize, envSize)
-                    #part = [Particle3D(*Util.getRandomDirection()*Util.getRandomQuadratic(radius)) for i in range(nPart)]
-                    part = [Particle3D(0, 0, 0) for i in range(nPart)]
-                    sim = Simulation(nStep, timeStep, part, env, [Sphere(0, 0, 0, T2, D, 0, radius)])
-                    printMessage = "{diffusionTime}ms diffusion time ({t}/{totDt}) and {nPart} particles ({i}/{totStep}), run {r}/{nRuns}:"\
-                        .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, i=i+1, totStep=len(nParts), r=r+1, nRuns=nRuns)
-                    histogramTitle = "Probability distribution of the distance travelled by a particle (sphere radius = {radius}um)\n"\
-                                     "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}, run {r}/{nRuns}"\
-                        .format(diffusionTime=diffusionTime, nPart=nPart, n=nStep, radius=radius, r=r+1, nRuns=nRuns)
-                    errors[t, i, r] = Validation.run1Sim(sim, printMessage, histogramTitle, trueCDF, pdfPointsX, pdfPointsY, plotHist)
-        return errors
-
-    def run1SimSignal(sim, printMessage, qPoints, trueSignalPoints, graphTitle, plotGraph):
-        startTime = time.time()
-        sim.run(seed=None, calcData=False)
-        sim = sim.getResults()
-        print(printMessage)
-        print("Computation time: {compTime}s".format(compTime = time.time() - startTime))
-
-        #distance computations:
-        md = np.linalg.norm( sim.getAvgDisplacements())
-        rmsd = (np.average( sim.getDistances()**2))**0.5
-        print("Mean displacement:", md)
-        print("Root mean square displacement:", rmsd)
-
-        #signal computations:
+    def signalPlot(simResultArray, plotIntermediary, plotTitle, qPoints, nRuns, diffusionTimes, xDataTuple, xDataType, simulationType, D, parameter=None):
+        xData = xDataTuple[0]
+        RMSEs = np.empty((len(diffusionTimes), len(xData), nRuns))
         qVectors = np.array([[q, 0, 0] for q in qPoints])
-        simulatedSignal = sim.getSGPSignal(qVectors, real=False)
-        rmse = ( np.average((trueSignalPoints - simulatedSignal)**2) )**0.5
-        print("Signal root mean square error:", rmse, "\n")
-
-        if plotGraph:
-            simulatedSignalReal = sim.getSGPSignal(qVectors, real=True)
-            plt.plot(qPoints, trueSignalPoints, color="r")#colors[t], marker=".")
-            plt.plot(qPoints, simulatedSignal, color="g")#colors[t], marker="o")
-            plt.plot(qPoints, simulatedSignalReal, color="b")#colors[t], marker="v")
-            plt.legend(["Theoretical signal", "Simulated signal", "Simulated signal (real part)"])
-            plt.xlabel("q=gamma*G*delta [um-1]")
-            plt.ylabel("Signal attenuation")
-            plt.title(graphTitle)
-            plt.yscale("log")
-            plt.grid()
-            plt.show()
-
-        return np.array([rmse, md, rmsd])
-
-    def runSphereSignalComp(nRuns, plotGraph, diffusionTimes, nStep, totalSteps, radius, D, T2, qPoints):
-        results = np.zeros((len(diffusionTimes), len(nStep), 3, nRuns))
+        graphTitle = "TODO"
 
         for t in range(len(diffusionTimes)):
             diffusionTime = diffusionTimes[t]
-
-            trueSignal = Util.getSignal_sphere_fin(radius, D, diffusionTime, 20, 20)
-            trueSignalPoints = trueSignal(qPoints)
-
-            for i in range(len(nStep)):
+            trueSignalPoints = ValidationCore.getTrueSignalPoints(simulationType, qPoints, D, diffusionTime, parameter)
+            for i in range(len(xData)):
                 for r in range(nRuns):
-                    n = nStep[i]
-                    nPart = int(totalSteps / n)
-                    timeStep = Util.getTimeStep(diffusionTime, n)
-                    l = (6*D*timeStep)**0.5
-                    envSize = 5*radius
-                    env = Environment(T2, D, envSize, envSize, envSize)
-                    part = [Particle3D(*Util.getRandomDirection()*Util.getRandomQuadratic(radius)) for i in range(nPart)]
-                    sim = Simulation(n, timeStep, part, env, [Sphere(0, 0, 0, T2, D, 0, radius)])
-                    printMessage = "{diffusionTime}ms diffusion time ({t}/{totDt}), {nPart} particles and {n} steps ({i}/{totStep}), run {r}/{nRuns}:"\
-                        .format(diffusionTime=diffusionTime, t=t+1, totDt=len(diffusionTimes), nPart=nPart, n=n, i=i+1, totStep=len(nStep), r=r+1, nRuns=nRuns)
-                    graphTitle = "SGP signal attenuation in an impermeable sphere (sphere radius = {radius}um)\n"\
-                                     "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}, run {r}/{nRuns}"\
-                        .format(diffusionTime=diffusionTime, nPart=nPart, n=n+1, radius=radius, r=r+1, nRuns=nRuns)
-                    results[t, i, :, r] = Validation.run1SimSignal(sim, printMessage, qPoints, trueSignalPoints, graphTitle, plotGraph)
-        return results
+                    simResults = simResultArray[t, i, r]
+
+                    simulatedSignal = simResults.getSGPSignal(qVectors, real=False)
+                    RMSEs[t, i, r] = ( np.average((trueSignalPoints - simulatedSignal)**2) )**0.5
+
+                    if plotIntermediary:
+                        simulatedSignalReal = simResults.getSGPSignal(qVectors, real=True)
+                        plt.plot(qPoints, trueSignalPoints, color="r")#colors[t], marker=".")
+                        plt.plot(qPoints, simulatedSignal, color="g")#colors[t], marker="o")
+                        plt.plot(qPoints, simulatedSignalReal, color="b")#colors[t], marker="v")
+                        plt.legend(["Theoretical signal", "Simulated signal", "Simulated signal (real part)"])
+                        plt.xlabel("q=gamma*G*delta [um-1]")
+                        plt.ylabel("Signal attenuation")
+                        plt.title(graphTitle)
+                        plt.yscale("log")
+                        plt.grid()
+                        plt.show()
+        yLabel = "RMSE between exact and empirical SGP signals"
+        ValidationCore.plotDelegator(RMSEs, diffusionTimes, xData, plotTitle, xDataType, yLabel, pValuePlot=False)
+
+    def averageSignalPlot(simResultArray, plotIntermediary, plotTitle, qPoints, nRuns, diffusionTimes, xDataTuple, xDataType, simulationType, D, parameter=None):
+        xData = xDataTuple[0]
+        RMSEs = np.empty((len(diffusionTimes), len(xData), 1))
+        qVectors = np.array([[q, 0, 0] for q in qPoints])
+
+        for t in range(len(diffusionTimes)):
+            diffusionTime = diffusionTimes[t]
+            trueSignalPoints = ValidationCore.getTrueSignalPoints(simulationType, qPoints, D, diffusionTime, parameter)
+
+            for i in range(len(xData)):
+                signals = np.empty((nRuns, len(qPoints)))
+                nStep, nPart = ValidationCore.getNStepNPart(xDataTuple, xDataType, i)
+                if simulationType == "sphere_uniform":
+                    graphTitle = "{nRuns} run average of SGP signal attenuation in an impermeable sphere (sphere radius = {radius}um)\n"\
+                                 "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}"\
+                        .format(radius=parameter, diffusionTime=diffusionTime, nPart=nPart, n=nStep, nRuns=nRuns)
+                elif simulationType == "planes":
+                    graphTitle = "{nRuns} run average of SGP signal attenuation between two impermeable planes (plane spacing = {spacing}um)\n"\
+                                 "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}"\
+                        .format(spacing=parameter, diffusionTime=diffusionTime, nPart=nPart, n=nStep, nRuns=nRuns)
+                else:
+                    return print("ERROR: invalid simulationType")
+
+                for r in range(nRuns):
+                    simResults = simResultArray[t, i, r]
+                    signals[r, :] = simResults.getSGPSignal(qVectors, real=False)
+
+                signalAverage = np.average(signals, axis=0)
+                signalStd = np.std(signals, axis=0)
+                RMSEs[t, i, 0] = ( np.average((trueSignalPoints - signalAverage)**2) )**0.5
+                #print("Signal root mean square error:", rmse, "\n")
+
+                if plotIntermediary:
+                    plt.plot(qPoints, trueSignalPoints, color="r")
+                    plt.errorbar(qPoints, signalAverage, signalStd, fmt="o")
+                    plt.legend(["Theoretical signal", "Average of simulated signal ({nRuns} runs)".format(nRuns=nRuns)])
+                    plt.xlabel("q=gamma*G*delta [um-1]")
+                    plt.ylabel("Signal attenuation")
+                    plt.title(graphTitle)
+                    plt.yscale("log")
+                    plt.grid()
+                    plt.show()
+        yLabel = "RMSE between exact and average empirical SGP signals"
+        ValidationCore.plotDelegator(RMSEs, diffusionTimes, xData, plotTitle, xDataType, yLabel, pValuePlot=False)
