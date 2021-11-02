@@ -6,16 +6,16 @@ from Util import Util
 
 if __name__ == '__main__':
     t0 = time.time()
-    nRuns = 8
-    diffusionTimes = [3, 10, 100] #[2, 5, 25] #ms
-    nParts = [100, 1000, 10000]#, 100000]
-    nStep = 16
+    nRuns = 24
+    diffusionTimes = [50, 100] #[2, 5, 25] #ms
+    nParts = [100, 1000, 5000, 10000]#, 100000]
+    nStep = 8
     D = 2 #um2/ms
     radius = 8 #um
     T2 = np.inf #no T2 relaxation
     plotGraph = False
     qPoints = np.linspace(0, 0.4, 101)[1:]
-    saveFileName = "sphere_conv_16TS_8R_3_10_50"
+    saveFileName = "sphere_conv_longDT"
 
     #results = Validation.runParallel(nRuns, Validation.runValidation, [diffusionTimes, (nParts, nStep), "convergence", "sphere_uniform", D, T2, radius], saveFileName=saveFileName)
     #results = Validation.runValidation(nRuns, diffusionTimes, (nParts, nStep), "convergence", "sphere_uniform", D, T2, radius)

@@ -144,7 +144,7 @@ class ValidationCore():
     def getTrueSignalPoints(simulationType, qPoints, D, diffusionTime, parameter):
         if simulationType == "sphere_uniform":
             radius = parameter
-            trueSignal = Util.getSignal_sphere_fin(radius, D, diffusionTime, 20, 20)
+            trueSignal = Util.getSignal_sphere_fin(radius, D, diffusionTime, 20, 20, 10)
         elif simulationType == "planes":
             spacing = parameter
             trueSignal = Util.getSignal_plane_fin(spacing, D, diffusionTime, 20)

@@ -4,7 +4,8 @@ import numpy as np
 from Util import Util
 
 radius = 8
-diffusionTimes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30, 40, 50, 60, 75, 100]
+#diffusionTimes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30, 40, 50, 60, 75, 100]
+diffusionTimes = list(range(1, 101))
 D = 2
 qPoints = np.linspace(0, 0.4, 101)[1:]
 
