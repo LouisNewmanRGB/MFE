@@ -5,10 +5,14 @@ from AbstractCompartment import AbstractCompartment
 from Particle3D import Particle3D
 
 class Sphere(AbstractCompartment):
-    def __init__(self, x, y, z, T2, diffusivity, probInOut, radius):
+    def __init__(self, x, y, z, T2, diffusivity, permeability, radius):
         super(Sphere, self).__init__(x, y, z, T2, diffusivity)
-        self.probInOut = probInOut
+        self.permeability = permeability
         self.radius = radius
+        self.parentComp = None
+
+    def setParentComp(self, compartment):
+        self.parentComp = compartment
 
     def findIntersection(self, ray, maxDistance):
         #ray direction vector must be normalized!
@@ -32,16 +36,16 @@ class Sphere(AbstractCompartment):
         return np.inf
 
     def collide(self, particle, oldPos, intersection, sim):
-        if self.contains(Particle3D(*oldPos)):
+        if self.contains(oldPos):
             #we are leaving this compartment
-            otherSideComp = sim.findCompartment(particle, excludedComp = self)
-            probability = self.probInOut
+            otherSideComp = self.parentComp
         else:
             #we are entering this compartment
             otherSideComp = self
-            probability = self.probInOut * (self.diffusivity/particle.getCompartment().getDiffusivity())**0.5
+        transmissionProba = 4*self.permeability/particle.getSpeed()
+        assert(transmissionProba <= 1)
 
-        if random.random() > probability:
+        if random.random() > transmissionProba:
             #deflection
             normal = (intersection - self.pos)
             normal = normal/np.linalg.norm(normal)
@@ -49,8 +53,8 @@ class Sphere(AbstractCompartment):
         else:
             particle.changeCompartment(otherSideComp, sim.getTimeStep())
 
-    def contains(self, particle):
-        return np.linalg.norm(particle.getPos() - self.pos) < self.radius
+    def contains(self, pos):
+        return np.linalg.norm(pos - self.pos) < self.radius
 
     def plot(self, ax):
         ############################################

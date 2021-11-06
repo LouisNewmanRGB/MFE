@@ -52,15 +52,15 @@ class SimulationResults():
         return abs(res)/self.nPart
         #return self.signal
 
-    def getSGPSignal(self, qVectors, real=False):
-        #if self.signal == None:
+    def getSGPSignal(self, qVectors, includeStd=False):
         disp = self.getDisplacements()
         T2Signal = np.array([p.getSignal() for p in self.particles])
-        if real:
-            exponentials = np.cos(np.matmul(qVectors, disp.T))
-        else:
-            exponentials = np.exp(1j*np.matmul(qVectors, disp.T))
-
+        exponentials = np.exp(1j*np.matmul(qVectors, disp.T)) #replace with cos for real signal
         expTimesT2 = np.multiply([T2Signal]*len(qVectors), exponentials)
-        return np.abs(np.average(expTimesT2, axis=1))
-        #return self.signal
+        signal = np.abs(np.average(expTimesT2, axis=1))
+        if includeStd:
+            squareMods = np.abs(expTimesT2)**2
+            stds = (np.average(squareMods, axis=1) - signal**2)**0.5
+            return signal, stds/self.nPart**0.5, stds
+        else:
+            return signal

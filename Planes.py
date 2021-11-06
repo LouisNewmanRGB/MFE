@@ -30,8 +30,8 @@ class Planes(AbstractCompartment):
         v[0] = -v[0]
         particle.setVelocity(v)
 
-    def contains(self, particle):
-        return particle.getPos()[0] > -self.halfSpacing and particle.getPos()[0] < self.halfSpacing
+    def contains(self, pos):
+        return pos[0] > -self.halfSpacing and pos[0] < self.halfSpacing
 
     def plot(self, ax):
         pass

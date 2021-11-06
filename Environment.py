@@ -46,7 +46,7 @@ class Environment(AbstractCompartment):
             elif line[i] < -self.size[i]/2:
                 newPos[i] = self.size[i]/2
         particle.setPos(newPos)
-        newComp = sim.findCompartment(particle)
+        newComp = sim.findCompartment(particle.getPos())
         particle.changeCompartment(newComp, sim.getTimeStep())
 
     def contains(self, particle):

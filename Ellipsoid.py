@@ -5,9 +5,10 @@ from AbstractCompartment import AbstractCompartment
 from Particle3D import Particle3D
 
 class Ellipsoid(AbstractCompartment):
-    def __init__(self, x, y, z, T2, diffusivity, probInOut, a, b, c):
+    def __init__(self, x, y, z, T2, diffusivity, permeability, a, b, c):
         super(Ellipsoid, self).__init__(x, y, z, T2, diffusivity)
-        self.probInOut = probInOut
+        self.permeability = permeability
+        self.parentComp = None
         if type(a) != np.ndarray:
             self.R = np.diag([a, b, c])
         else:
@@ -16,6 +17,9 @@ class Ellipsoid(AbstractCompartment):
         self.maxRadius = np.max([np.linalg.norm(a), np.linalg.norm(b), np.linalg.norm(c)])
         self.invR = np.linalg.inv(self.R)
         self.A = np.matmul(np.transpose(self.invR), self.invR) #parameter in quadratic form
+
+    def setParentComp(self, compartment):
+        self.parentComp = compartment
 
     def findIntersection(self, ray, maxDistance):
         if np.linalg.norm(ray[0] - self.pos) - self.maxRadius <= maxDistance:
@@ -40,16 +44,16 @@ class Ellipsoid(AbstractCompartment):
         return np.inf
 
     def collide(self, particle, oldPos, intersection, sim):
-        if self.contains(Particle3D(*oldPos)):
+        if self.contains(oldPos):
             #we are leaving this compartment
-            otherSideComp = sim.findCompartment(particle, excludedComp = self)
-            probability = self.probInOut
+            otherSideComp = self.parentComp
         else:
             #we are entering this compartment
             otherSideComp = self
-            probability = self.probInOut * (self.diffusivity/particle.getCompartment().getDiffusivity())**0.5
+        transmissionProba = 4*self.permeability/particle.getSpeed()
+        assert(transmissionProba <= 1)
 
-        if random.random() > probability:
+        if random.random() > transmissionProba:
             #deflection
             normal = 2*np.matmul(self.A, intersection - self.pos)
             normal = normal/np.linalg.norm(normal)
@@ -57,8 +61,8 @@ class Ellipsoid(AbstractCompartment):
         else:
             particle.changeCompartment(otherSideComp, sim.getTimeStep())
 
-    def contains(self, particle):
-        return np.linalg.norm(np.matmul(self.invR, particle.getPos() - self.pos)) < 1
+    def contains(self, pos):
+        return np.linalg.norm(np.matmul(self.invR, pos - self.pos)) < 1
 
     def plot(self, ax):
         ############################################

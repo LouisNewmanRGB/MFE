@@ -46,13 +46,16 @@ class Simulation():
     def getTruePositions(self):
         return self.truePositions
         
-    def findCompartment(self, particle, excludedComp = None):
+    def findCompartment(self, pos, excludedComp = None):
         for compartment in self.compartments:
-            if compartment != excludedComp and compartment.contains(particle):
+            if compartment != excludedComp and compartment.contains(pos):
                 return compartment
     
     def run(self, seed=None, calcData = False, partPrintNumber = None):
         #calcData determines whether intermediate positions will be stored in memory
+        for comp in self.compartments[:-1]:
+            parent = self.findCompartment(comp.getPos(), excludedComp = comp)
+            comp.setParentComp(parent)
 
         if calcData:
             self.positions = [[] for i in range(self.nPart)]
@@ -68,7 +71,7 @@ class Simulation():
         for p in range(self.nPart):
             particle = self.particles[p]
             particle.setVelocity(Util.getRandomDirection())
-            newComp = self.findCompartment(particle)
+            newComp = self.findCompartment(particle.getPos())
             particle.changeCompartment(newComp, self.timeStep)
             if calcData:
                 self.positions[p].append(particle.getPos().copy())

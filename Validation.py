@@ -146,7 +146,7 @@ class Validation():
         yLabel = "Difference between theoretical and simulated RMSD"
         ValidationCore.plotDelegator(errors, diffusionTimes, xData, plotTitle, xDataType, yLabel, pValuePlot=True)
 
-    def signalPlot(simResultArray, plotIntermediary, plotTitle, qPoints, nRuns, diffusionTimes, xDataTuple, xDataType, simulationType, D, parameter=None):
+    def signalPlot(simResultArray, plotIntermediary, plotTitle, qPoints, nRuns, diffusionTimes, xDataTuple, xDataType, simulationType, D, parameter=None, maxStd=None):
         xData = xDataTuple[0]
         RMSEs = np.empty((len(diffusionTimes), len(xData), nRuns))
         qVectors = np.array([[q, 0, 0] for q in qPoints])
@@ -159,14 +159,17 @@ class Validation():
                 for r in range(nRuns):
                     simResults = simResultArray[t, i, r]
 
-                    simulatedSignal = simResults.getSGPSignal(qVectors, real=False)
+                    simulatedSignal, stdsSample, stdsPopulation = simResults.getSGPSignal(qVectors, includeStd=True)
                     RMSEs[t, i, r] = ( np.average((trueSignalPoints - simulatedSignal)**2) )**0.5
 
+                    if maxStd != None:
+                        maxPopStd = np.max(stdsPopulation)
+                        nMin = int((maxPopStd/maxStd)**2)
+                        print("Number of particles required to reach a sample standard deviation of {maxStd}: {nMin}".format(maxStd=maxStd, nMin=nMin))
+
                     if plotIntermediary:
-                        simulatedSignalReal = simResults.getSGPSignal(qVectors, real=True)
                         plt.plot(qPoints, trueSignalPoints, color="r")#colors[t], marker=".")
-                        plt.plot(qPoints, simulatedSignal, color="g")#colors[t], marker="o")
-                        plt.plot(qPoints, simulatedSignalReal, color="b")#colors[t], marker="v")
+                        plt.errorbar(qPoints, simulatedSignal, stdsSample, fmt=".", color="g")
                         plt.legend(["Theoretical signal", "Simulated signal", "Simulated signal (real part)"])
                         plt.xlabel("q=gamma*G*delta [um-1]")
                         plt.ylabel("Signal attenuation")
@@ -202,7 +205,7 @@ class Validation():
 
                 for r in range(nRuns):
                     simResults = simResultArray[t, i, r]
-                    signals[r, :] = simResults.getSGPSignal(qVectors, real=False)
+                    signals[r, :] = simResults.getSGPSignal(qVectors)
 
                 signalAverage = np.average(signals, axis=0)
                 signalStd = np.std(signals, axis=0)
