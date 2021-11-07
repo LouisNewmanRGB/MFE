@@ -9,19 +9,19 @@ class Particle3D(Abstract3DObject):
        self.truePos = self.pos.copy() #position without wrap-around effect
        self.velocity = np.array([vx, vy, vz])
        self.compartment = None
-       self.signal = 1
+       self.T2signal = 1
 
    def __init__(self, x, y, z):
        super(Particle3D, self).__init__(float(x), float(y), float(z))
        self.truePos = self.pos.copy() #position without wrap-around effect
        self.velocity = None
        self.compartment = None
-       self.signal = 1
+       self.T2Signal = 1
 
    def move(self, time):
        self.pos += time*self.velocity
        self.truePos += time*self.velocity
-       self.signal *= math.exp(-time/self.compartment.getT2()) #T2 signal attenuation
+       self.T2Signal *= math.exp(-time/self.compartment.getT2()) #T2 signal attenuation
 
    def changeCompartment(self, compartment, timeStep):
        self.compartment = compartment
@@ -45,5 +45,5 @@ class Particle3D(Abstract3DObject):
    def changeSpeed(self, newSpeed):
        self.velocity = newSpeed*self.velocity/self.getSpeed()
 
-   def getSignal(self):
-       return self.signal
+   def getT2Signal(self):
+       return self.T2Signal

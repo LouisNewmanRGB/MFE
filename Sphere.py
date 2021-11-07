@@ -2,7 +2,6 @@ import numpy as np
 import random
 
 from AbstractCompartment import AbstractCompartment
-from Particle3D import Particle3D
 
 class Sphere(AbstractCompartment):
     def __init__(self, x, y, z, T2, diffusivity, permeability, radius):
@@ -43,7 +42,7 @@ class Sphere(AbstractCompartment):
             #we are entering this compartment
             otherSideComp = self
         transmissionProba = 4*self.permeability/particle.getSpeed()
-        assert(transmissionProba <= 1)
+        #assert(transmissionProba <= 1)
 
         if random.random() > transmissionProba:
             #deflection

@@ -35,7 +35,7 @@ class SimulationResults():
         """"slower version"""
         #if self.signal == None:
         disp = self.getDisplacements()
-        T2Signal = np.array([p.getSignal() for p in self.particles])
+        T2Signal = np.array([p.getT2Signal() for p in self.particles])
         if real:
             qNorm = np.linalg.norm(qVector)
             dispX = disp[:, 0]
@@ -43,10 +43,10 @@ class SimulationResults():
             res = 2*np.sum(np.where(dispX > 0, temp, 0))
             #for p in range(self.nPart):
             #    if disp[p][0] > 0:
-            #        res += 2*np.cos(np.dot(disp[p], qVector))*self.particles[p].getSignal()
+            #        res += 2*np.cos(np.dot(disp[p], qVector))*self.particles[p].getT2Signal()
         else:
             #for p in range(self.nPart):
-            #    res += cmath.exp(1j*np.dot(disp[p], qVector))*self.particles[p].getSignal()
+            #    res += cmath.exp(1j*np.dot(disp[p], qVector))*self.particles[p].getT2Signal()
             res = np.dot( np.exp(1j*np.matmul(disp, qVector)), T2Signal)
             #res = res.imag
         return abs(res)/self.nPart
@@ -54,13 +54,24 @@ class SimulationResults():
 
     def getSGPSignal(self, qVectors, includeStd=False):
         disp = self.getDisplacements()
-        T2Signal = np.array([p.getSignal() for p in self.particles])
+        T2Signal = np.array([p.getT2Signal() for p in self.particles])
         exponentials = np.exp(1j*np.matmul(qVectors, disp.T)) #replace with cos for real signal
         expTimesT2 = np.multiply([T2Signal]*len(qVectors), exponentials)
         signal = np.abs(np.average(expTimesT2, axis=1))
         if includeStd:
             squareMods = np.abs(expTimesT2)**2
             stds = (np.average(squareMods, axis=1) - signal**2)**0.5
+            return signal, stds/self.nPart**0.5, stds
+        else:
+            return signal
+
+    def getFiniteGradientSignal(self, bValue, includeStd=False):
+        gammaG = self.particles[0].getGradientSequence().getGammaG(bValue)
+        exponentials = np.array([p.getSignal(gammaG) for p in self.particles])
+        signal = np.abs(np.average(exponentials, axis=0))
+        if includeStd:
+            squareMods = np.abs(exponentials)**2
+            stds = (np.average(squareMods, axis=0) - signal**2)**0.5
             return signal, stds/self.nPart**0.5, stds
         else:
             return signal
