@@ -16,6 +16,10 @@ class Util():
             funcName = str(func).split()[1].split(".")[1]
         return "./" + Util.pickleDir + "/" + funcName
 
+    def getMinNStep(diffusionTime, permeability, D1, D2=np.inf):
+        D = min(D1, D2)
+        return 1 + int(8*permeability**2 * diffusionTime/(3*D))
+
     def recursiveMax(listOfLists):
         if type(listOfLists[0]) == list:
             return np.max([Util.recursiveMax(e) for e in listOfLists])
@@ -114,6 +118,11 @@ class Util():
                         2*np.sum([np.exp(-D*diffusionTime*alpha**2)* \
                                   (np.sin(alpha*r) - alpha*r*np.cos(alpha*r))/(alpha*np.sin(alpha*radius)**2) for alpha in alphaList], axis=0)/radius )
         return F
+
+    def getPDF_sphere_standing(radius):
+        def f(r):
+            return (1 - np.heaviside(r - radius, 0)) * 3*r**2/(radius**3)
+        return f
 
     def getPDF_plane(a):
         def f(x):

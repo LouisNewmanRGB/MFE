@@ -1,6 +1,5 @@
 import numpy as np
 
-
 class SimulationResults():
     def __init__(self, startingPositions, particles):
         self.startingPositions = startingPositions
@@ -65,8 +64,7 @@ class SimulationResults():
         else:
             return signal
 
-    def getFiniteGradientSignal(self, bValue, includeStd=False):
-        gammaG = self.particles[0].getGradientSequence().getGammaG(bValue)
+    def getFiniteGradientSignalGammaG(self, gammaG, includeStd):
         exponentials = np.array([p.getSignal(gammaG) for p in self.particles])
         signal = np.abs(np.average(exponentials, axis=0))
         if includeStd:
@@ -75,3 +73,7 @@ class SimulationResults():
             return signal, stds/self.nPart**0.5, stds
         else:
             return signal
+
+    def getFiniteGradientSignalBValue(self, bValue, includeStd=False):
+        gammaG = self.particles[0].getGradientSequence().getGammaG(bValue)
+        return self.getFiniteGradientSignalGammaG(gammaG, includeStd)

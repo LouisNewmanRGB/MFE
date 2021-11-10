@@ -28,13 +28,7 @@ part.changeCompartment(env, TE/nStep)
 for ts in timeSteps:
     part.move(ts)
 
-timePoints = np.linspace(0, TE, 500)
-specialPoints = np.array([t, t + delta, t + Delta, t + delta + Delta])
-plt.plot(timePoints, np.array([seq.getValue(tim) for tim in timePoints])[:, 0])
-plt.scatter(specialPoints, np.array([seq.getValue(tim) for tim in specialPoints])[:, 0])
-plt.scatter([timeSteps[0]*n for n in range(nStep+1)], [0]*(nStep+1))
-plt.grid()
-plt.show()
+seq.plot()
 stop
 
 """

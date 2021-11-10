@@ -8,8 +8,8 @@ class AbstractGradientSequence(metaclass=abc.ABCMeta):
     def getValue(self, time):
         pass
 
-    def getPhaseStep(self, particle, dt, t0, discreteSequenceIndex):
+    def getGammaG(self, bValue):
         pass
 
-    def getGammaG(self, bValue):
+    def plot(self):
         pass
