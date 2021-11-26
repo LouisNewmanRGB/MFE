@@ -1,5 +1,4 @@
 import numpy as np
-import pyrr.geometric_tests as gt #installed for ray calculations
 
 from AbstractCompartment import AbstractCompartment
 from Simulation import Simulation
@@ -8,7 +7,7 @@ class Environment(AbstractCompartment):
     def __init__(self, T2, diffusivity, sizeX, sizeY, sizeZ):
         super(Environment, self).__init__(None, None, None, T2, diffusivity)
         self.size = np.array([sizeX, sizeY, sizeZ])
-        self.tolerance = self.size*Simulation.TOL
+        self.tolerance = max(self.size)*Simulation.TOL
         self.aabb = np.array([-self.size/2, self.size/2])
 
     def findIntersection(self, ray, maxDistance):

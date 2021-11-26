@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from Util import Util
 from StejskalTanner import StejskalTanner
-from Particle3DFiniteGradient import Particle3DFiniteGradient
+from Particle3DPiecewiseGradient import Particle3DPiecewiseGradient
 from Environment import Environment
 
 t = 10
@@ -22,7 +22,7 @@ nStep = 3
 timeSteps = [TE/nStep]*nStep
 T2 = np.inf
 env = Environment(T2, 2, 5, 5, 5)
-part = Particle3DFiniteGradient(0, 0, 0, seq)
+part = Particle3DPiecewiseGradient(0, 0, 0, seq)
 part.setVelocity(np.array([1, 0, 0]))
 part.changeCompartment(env, TE/nStep)
 for ts in timeSteps:
