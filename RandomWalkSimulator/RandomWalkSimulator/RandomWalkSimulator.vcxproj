@@ -156,6 +156,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Abstract3DObject.cpp" />
+    <ClCompile Include="Ellipsoid.cpp" />
     <ClCompile Include="Environment.cpp" />
     <ClCompile Include="Particle3DPWG.cpp" />
     <ClCompile Include="Particle3DSGP.cpp" />
@@ -174,6 +175,7 @@
   <ItemGroup>
     <ClInclude Include="Abstract3DObject.h" />
     <ClInclude Include="AbstractCompartment.h" />
+    <ClInclude Include="Ellipsoid.h" />
     <ClInclude Include="Environment.h" />
     <ClInclude Include="Particle3DPWG.h" />
     <ClInclude Include="Particle3DSGP.h" />

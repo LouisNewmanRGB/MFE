@@ -7,15 +7,15 @@ from Util import Util
 if __name__ == '__main__':
     t0 = time.time()
     nRuns = 1
-    diffusionTimes = [50, 100] #[2, 5, 25] #ms
-    nParts = [100, 1000, 5000, 10000, 100000]
-    nStep = 8
+    diffusionTimes = [10] #[2, 5, 25] #ms
+    nParts = [38461] #, 100, 1000, 5000, 10000, 100000]
+    nStep = 26
     D = 2 #um2/ms
     radius = 8 #um
     T2 = np.inf #no T2 relaxation
     plotGraph = True
     qPoints = np.linspace(0, 0.4, 101)[1:]
-    saveFileName = "sphere_conv_variance_test"
+    saveFileName = "sphere_conv_29nov2"
 
     #results = Validation.runParallel(nRuns, Validation.runValidation, [diffusionTimes, (nParts, nStep), "convergence", "sphere_uniform", D, T2, radius], saveFileName=saveFileName)
     #results = Validation.runValidation(nRuns, diffusionTimes, (nParts, nStep), "convergence", "sphere_uniform", D, T2, radius)

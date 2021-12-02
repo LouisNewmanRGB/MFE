@@ -150,7 +150,8 @@ class Validation():
         xData = xDataTuple[0]
         RMSEs = np.empty((len(diffusionTimes), len(xData), nRuns))
         qVectors = np.array([[q, 0, 0] for q in qPoints])
-        graphTitle = "TODO"
+        graphTitle = "RWS of diffusion in an impermeable sphere of radius 8um\n" \
+                     "diffusion time = 10ms, 38461 particles and 26 time steps (1M total steps)"
 
         for t in range(len(diffusionTimes)):
             diffusionTime = diffusionTimes[t]
@@ -172,7 +173,7 @@ class Validation():
                         plt.errorbar(qPoints, simulatedSignal, stdsSample, fmt=".", color="g")
                         plt.legend(["Theoretical signal", "Simulated signal", "Simulated signal (real part)"])
                         plt.xlabel("q=gamma*G*delta [um-1]")
-                        plt.ylabel("Signal attenuation")
+                        plt.ylabel("SGP Signal attenuation")
                         plt.title(graphTitle)
                         plt.yscale("log")
                         plt.grid()
