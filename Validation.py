@@ -2,41 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats
 import time
-import multiprocessing
+from copy import deepcopy
+#import multiprocessing
 
-from Util import Util
-from SimulationResults import SimulationResults
+from SimulationCppResults import SimulationCppResults
 from ValidationCore import ValidationCore
+from Util import Util
 
 class Validation():
 
-    def runParallel(nRuns, serialFunction, serialArgs, nProcess=8, saveFileName=None):
-        rpp = nRuns // nProcess #runs per process
-        print("starting {n} runs".format(n=rpp*nProcess))
-
-        manager = multiprocessing.Manager()
-        result_dict = manager.dict()
-        processes = []
-        for number in range(nProcess):
-            proc = multiprocessing.Process(target=ValidationCore.runProcess, args=(result_dict, number, rpp, serialFunction, serialArgs,))
-            proc.start()
-            processes.append(proc)
-
-        for proc in processes:
-            proc.join()
-
-        results = np.concatenate(tuple([result_dict[n] for n in range(nProcess)]), axis=-1)
-
-        if saveFileName == None:
-            np.save(Util.getFilePath(serialFunction), results)
-        else:
-            np.save(Util.getFilePath(saveFileName), results)
-
-        return results
-
     def runValidation(nRuns, diffusionTimes, xDataTuple, xDataType, simulationType, D, T2, parameter=None):
         xData = xDataTuple[0]
-        results = np.empty((len(diffusionTimes), len(xData), nRuns), dtype=SimulationResults)
+        results = np.empty((len(diffusionTimes), len(xData), nRuns), dtype=SimulationCppResults)
         for t in range(len(diffusionTimes)):
             diffusionTime = diffusionTimes[t]
             for i in range(len(xData)):
@@ -53,10 +30,12 @@ class Validation():
 
                     timeStep = Util.getTimeStep(diffusionTime, nStep)
                     sim = ValidationCore.getSim(nStep, nPart, timeStep, simulationType, D, T2, parameter)
+                    sim.createSequenceSGP()
+
 
                     startTime = time.time()
-                    sim.run(seed=None, calcData=False)
-                    results[t, i, r] = sim.getResults()
+                    sim.run()
+                    results[t, i, r] = SimulationCppResults(sim.getResults(), nPart) #SimulationCppResults(np.array([0]*10*nPart), nPart)
                     print(printMessage)
                     print("Computation time: {compTime}s".format(compTime = time.time() - startTime), "\n")
         return results
@@ -181,47 +160,28 @@ class Validation():
         yLabel = "RMSE between exact and empirical SGP signals"
         ValidationCore.plotDelegator(RMSEs, diffusionTimes, xData, plotTitle, xDataType, yLabel, pValuePlot=False)
 
-    def averageSignalPlot(simResultArray, plotIntermediary, plotTitle, qPoints, nRuns, diffusionTimes, xDataTuple, xDataType, simulationType, D, parameter=None):
-        xData = xDataTuple[0]
-        RMSEs = np.empty((len(diffusionTimes), len(xData), 1))
-        qVectors = np.array([[q, 0, 0] for q in qPoints])
+    """
+    def runParallel(nRuns, serialFunction, serialArgs, nProcess=8, saveFileName=None):
+        rpp = nRuns // nProcess #runs per process
+        print("starting {n} runs".format(n=rpp*nProcess))
 
-        for t in range(len(diffusionTimes)):
-            diffusionTime = diffusionTimes[t]
-            trueSignalPoints = ValidationCore.getTrueSignalPoints(simulationType, qPoints, D, diffusionTime, parameter)
+        manager = multiprocessing.Manager()
+        result_dict = manager.dict()
+        processes = []
+        for number in range(nProcess):
+            proc = multiprocessing.Process(target=ValidationCore.runProcess, args=(result_dict, number, rpp, serialFunction, serialArgs,))
+            proc.start()
+            processes.append(proc)
 
-            for i in range(len(xData)):
-                signals = np.empty((nRuns, len(qPoints)))
-                nStep, nPart = ValidationCore.getNStepNPart(xDataTuple, xDataType, i)
-                if simulationType == "sphere_uniform":
-                    graphTitle = "{nRuns} run average of SGP signal attenuation in an impermeable sphere (sphere radius = {radius}um)\n"\
-                                 "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}"\
-                        .format(radius=parameter, diffusionTime=diffusionTime, nPart=nPart, n=nStep, nRuns=nRuns)
-                elif simulationType == "planes":
-                    graphTitle = "{nRuns} run average of SGP signal attenuation between two impermeable planes (plane spacing = {spacing}um)\n"\
-                                 "Diffusion time = {diffusionTime}ms, Number of particles = {nPart}, Number of steps = {n}"\
-                        .format(spacing=parameter, diffusionTime=diffusionTime, nPart=nPart, n=nStep, nRuns=nRuns)
-                else:
-                    return print("ERROR: invalid simulationType")
+        for proc in processes:
+            proc.join()
 
-                for r in range(nRuns):
-                    simResults = simResultArray[t, i, r]
-                    signals[r, :] = simResults.getSGPSignal(qVectors)
+        results = np.concatenate(tuple([result_dict[n] for n in range(nProcess)]), axis=-1)
 
-                signalAverage = np.average(signals, axis=0)
-                signalStd = np.std(signals, axis=0)
-                RMSEs[t, i, 0] = ( np.average((trueSignalPoints - signalAverage)**2) )**0.5
-                #print("Signal root mean square error:", rmse, "\n")
+        if saveFileName == None:
+            np.save(Util.getFilePath(serialFunction), results)
+        else:
+            np.save(Util.getFilePath(saveFileName), results)
 
-                if plotIntermediary:
-                    plt.plot(qPoints, trueSignalPoints, color="r")
-                    plt.errorbar(qPoints, signalAverage, signalStd, fmt="o")
-                    plt.legend(["Theoretical signal", "Average of simulated signal ({nRuns} runs)".format(nRuns=nRuns)])
-                    plt.xlabel("q=gamma*G*delta [um-1]")
-                    plt.ylabel("Signal attenuation")
-                    plt.title(graphTitle)
-                    plt.yscale("log")
-                    plt.grid()
-                    plt.show()
-        yLabel = "RMSE between exact and average empirical SGP signals"
-        ValidationCore.plotDelegator(RMSEs, diffusionTimes, xData, plotTitle, xDataType, yLabel, pValuePlot=False)
+        return results
+    """

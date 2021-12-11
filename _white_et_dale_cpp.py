@@ -6,17 +6,12 @@ print(data[0:7, :])
 
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 import scipy.stats
 
-from Environment import Environment
-from Sphere import Sphere
-from Particle3DPiecewiseGradient import Particle3DPiecewiseGradient
-from Simulation import Simulation
-from Util import Util
-from Validation import Validation
-from SimulationResults2 import SimulationResults2
-from StejskalTanner import StejskalTanner
+from SimulationPython.Simulation.Environment import Environment
+from SimulationPython.Simulation.Sphere import Sphere
+from SimulationPython.Simulation.Util import Util
+from SimulationCppResults import SimulationResults2
 
 #simulation parameters
 diffusionTimes = [12, 18, 24, 30, 36, 42, 48, 54, 60] #[12] for white_et_dale_permeability and white_et_dale_permeability2

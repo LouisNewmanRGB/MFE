@@ -1,37 +1,43 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy.stats
 
-from SimulationResults2 import SimulationResults2
-from Util import Util
+from SimulationCppResults import SimulationResults2
+from SimulationPython.Simulation.Util import Util
 D = 2
-diffusionTime = 50
+diffusionTime = 5
 radius = 8
 
 #data = np.load("./RandomWalkSimulator/results/npyTest.npy")
-data = np.load("./RandomWalkSimulator/results/npyTestSphere.npy")
+data = np.load("./RandomWalkSimulator/results/solid_sphere.npy")
 print(data.shape)
 print(data[0:7, :])
 
 results = SimulationResults2(data)
+if data.shape[0] < 1000:
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    #ax.scatter(results.startingPositions[:, 0], results.startingPositions[:, 1], results.startingPositions[:, 2])
+    #ax.scatter(results.getEndPositions()[:, 0], results.getEndPositions()[:, 1], results.getEndPositions()[:, 2])
+    ax.scatter(results.endPositionsVoxel[:, 0], results.endPositionsVoxel[:, 1], results.endPositionsVoxel[:, 2])
+    plt.show()
 
-"""
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-ax.scatter(results.startingPositions[:, 0], results.startingPositions[:, 1], results.startingPositions[:, 2])
-#ax.scatter(results.getEndPositions()[:, 0], results.getEndPositions()[:, 1], results.getEndPositions()[:, 2])
-#ax.scatter(results.endPositionsVoxel[:, 0], results.endPositionsVoxel[:, 1], results.endPositionsVoxel[:, 2])
-plt.show()
-"""
+for pos in results.endPositionsVoxel:
+    if np.linalg.norm(pos) <= radius:
+        print("PROBLEM: particle inside sphere")
 
-qPoints = np.linspace(0, 0.4, 101)[1:]
+qPoints = np.linspace(0, 1.5, 101)[1:]
 qVectors = np.array([[q, 0, 0] for q in qPoints])
 simulatedSignal, stdsSample, stdsPopulation = results.getSGPSignal(qVectors, includeStd=True)
-trueSignalPoints = Util.getSignal_sphere_fin(radius, D, diffusionTime, 20, 20, 10)(qPoints)
+
+def signal_free(q):
+    return np.exp(-q**2 * D*diffusionTime)
+trueSignalPoints = signal_free(qPoints)
+sphereSignalPoints = Util.getSignal_sphere_fin(radius, D, diffusionTime, 20, 20, 10)(qPoints)
 
 plt.plot(qPoints, trueSignalPoints, color="r")#colors[t], marker=".")
+plt.plot(qPoints, sphereSignalPoints, color="b")
 plt.errorbar(qPoints, simulatedSignal, stdsSample, fmt=".", color="g")
-plt.legend(["Theoretical signal", "Simulated signal", "Simulated signal (real part)"])
+plt.legend(["Free diffusion signal", "DIffusion in a sphere","Simulated signal"])
 plt.xlabel("q=gamma*G*delta [um-1]")
 plt.ylabel("Signal attenuation")
 plt.title("graphTitle")

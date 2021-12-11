@@ -3,20 +3,10 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import scipy.stats
 
-from Particle3D import Particle3D
-from Environment import Environment
-from Simulation import Simulation
-from Sphere import Sphere
-from Planes import Planes
+from SimulationCpp import Simulation
 from Util import Util
 
 class ValidationCore():
-
-    def runProcess(result_dict, number, rpp, serialFunction, serialArgs):
-        print("Starting process", number)
-        results = serialFunction(rpp, *serialArgs)
-        print("Finished process", number)
-        result_dict[number] = results
 
     def comparisonPlot(data, diffusionTimes, nStep, plotTitle, yLabel):
         averageData = np.average(data, axis=2)
@@ -110,36 +100,59 @@ class ValidationCore():
         if simulationType == "free":
             l = (6*D*timeStep)**0.5
             envSize = 10*l
+            sim = Simulation(nStep, timeStep, T2, D, envSize, envSize, envSize)
+            sim.createStartingPositions(nPart, False)
+            #sim.createStartingPositionsAtPos(nPart, 0, 0, 0)
+            """
             part = [Particle3D(np.random.uniform(-envSize/2, envSize/2), np.random.uniform(-envSize/2, envSize/2), \
                                np.random.uniform(-envSize/2, envSize/2)) for i in range(nPart)]
             #part = [Particle3D(Util.getRandomU(envSize),Util.getRandomU(envSize),Util.getRandomU(envSize)) for i in range(nPart)]
             compartments = []
+            """
 
         elif simulationType == "sphere_center":
             radius = parameter
             envSize = 5*radius
+            sim = Simulation(nStep, timeStep, T2, D, envSize, envSize, envSize)
+            sim.addSphere(0, 0, 0, T2, D, 0, radius)
+            sim.createStartingPositionsAtPos(nPart, 0, 0, 0)
+            """
             part = [Particle3D(0, 0, 0) for i in range(nPart)]
             compartments = [Sphere(0, 0, 0, T2, D, 0, radius)]
+            """
 
         elif simulationType == "sphere_uniform":
             radius = parameter
             envSize = 5*radius
+            sim = Simulation(nStep, timeStep, T2, D, envSize, envSize, envSize)
+            sim.addSphere(0, 0, 0, T2, D, 0, radius)
+            sim.createStartingPositions(nPart, True)
+            """
             part = [Particle3D(*Util.getRandomDirection()*Util.getRandomQuadratic(radius)) for i in range(nPart)]
             compartments = [Sphere(0, 0, 0, T2, D, 0, radius)]
+            """
 
         elif simulationType == "planes":
             spacing = parameter
             envSize = 4*spacing
+            sim = Simulation(nStep, timeStep, T2, D, envSize, envSize, envSize)
+            sim.addPlanes(T2, D, spacing)
+            sim.createStartingPositions(nPart, True)
+            """
             part = [Particle3D(np.random.uniform(-spacing/2, spacing/2), np.random.uniform(-envSize/2, envSize/2), \
                                np.random.uniform(-envSize/2, envSize/2)) for i in range(nPart)]
             #part = [Particle3D(Util.getRandomU(spacing), Util.getRandomU(envSize), Util.getRandomU(envSize)) for i in range(nPart)]
             compartments = [Planes(T2, D, spacing)]
+            """
 
         else:
             return print("ERROR: invalid simulationType")
 
+        """
         env = Environment(T2, D, envSize, envSize, envSize)
         return Simulation(nStep, timeStep, part, env, compartments)
+        """
+        return sim
 
     def getTrueSignalPoints(simulationType, qPoints, D, diffusionTime, parameter):
         if simulationType == "sphere_uniform":
@@ -151,3 +164,11 @@ class ValidationCore():
         else:
             return print("ERROR: invalid simulationType")
         return trueSignal(qPoints)
+
+    """
+    def runProcess(result_dict, number, rpp, serialFunction, serialArgs):
+        print("Starting process", number)
+        results = serialFunction(rpp, *serialArgs)
+        print("Finished process", number)
+        result_dict[number] = results
+    """

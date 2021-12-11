@@ -51,9 +51,6 @@
     <ClCompile Include="Particle3DSGP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="_testFunction.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SimulationSGP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -61,6 +58,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Ellipsoid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="_solidSphere.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="_planesMaxRadius.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
