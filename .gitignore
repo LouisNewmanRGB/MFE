@@ -1,6 +1,8 @@
 __pycache__/
 .idea/
 numpy saves/
+mri images/
+histology/
 RandomWalkSimulator/.vs/
 RandomWalkSimulator/Debug/
 RandomWalkSimulator/Release/

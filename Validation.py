@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats
 import time
-from copy import deepcopy
 #import multiprocessing
 
 from SimulationCppResults import SimulationCppResults
@@ -85,7 +84,47 @@ class Validation():
                         plt.title(histogramTitle)
                         plt.show()
 
-        yLabel = "Supremum distance between exact and empirical CDFs"
+        yLabel = "KS test statistic"
+        ValidationCore.plotDelegator(errors, diffusionTimes, xData, plotTitle, xDataType, yLabel, pValuePlot=False)
+
+    def distributionPlot_normal(simResultArray, plotTitle, plotIntermediary, nRuns, diffusionTimes, xDataTuple, xDataType, simulationType, D, parameter=None):
+        xData = xDataTuple[0]
+        errors = np.zeros((len(diffusionTimes), len(xData), nRuns))
+        for t in range(len(diffusionTimes)):
+            diffusionTime = diffusionTimes[t]
+
+            if simulationType == "free":
+                truePDF = Util.getPDF_normal(D, diffusionTime)
+                trueCDF = Util.getCDF_normal(D, diffusionTime)
+                pdfPointsX = np.linspace(-2 * (6 * D * diffusionTime)**0.5, 2 * (6 * D * diffusionTime)**0.5, 500)
+                pdfPointsY = truePDF(pdfPointsX)
+                histogramTitle = "TODO"
+            else:
+                print("ERROR: invalid simulationType")
+                return None
+
+            for i in range(len(xData)):
+                for r in range(nRuns):
+                    simResults = simResultArray[t, i, r]
+                    #kolmogorov-smirnov
+                    #print(printMessage)
+                    test = scipy.stats.kstest(simResults.getDisplacements()[:, 0], trueCDF)
+                    errors[t, i, r] = test.statistic
+                    #print("Kolmogorov-Smirnov test Statistic:", test.statistic)
+                    #print("Kolmogorov-Smirnov test pvalue:", test.pvalue, "\n")
+
+                if plotIntermediary:
+                        bw = 2*scipy.stats.iqr(simResults.getDisplacements()[:, 1], rng=(25, 75))/(len(simResults.getDisplacements()[:, 1]))**(1/3)
+                        nBins = int((np.max(simResults.getDisplacements()[:, 1]) - np.min(simResults.getDisplacements()[:, 1]))/bw)
+                        plt.hist(simResults.getDisplacements()[:, 1], bins=nBins, density = True, stacked=True)
+                        plt.plot(pdfPointsX, pdfPointsY, color = 'red')
+                        plt.legend(["Expected probability density function", "Random walk results histogram"])
+                        plt.xlabel("Distance travelled [um]")
+                        plt.ylabel("[um-1]")
+                        plt.title(histogramTitle)
+                        plt.show()
+
+        yLabel = "KS test statistic"
         ValidationCore.plotDelegator(errors, diffusionTimes, xData, plotTitle, xDataType, yLabel, pValuePlot=False)
 
     def meanDisplacementPlot(simResultArray, plotTitle, nRuns, diffusionTimes, xDataTuple, xDataType):

@@ -14,6 +14,11 @@ Eigen::Vector3d Util::getRandomDirection() {
 	double theta = acos(cosTheta);
 	//double theta = Util::getRandomUniform(0, M_PI);
 	return Eigen::Vector3d{ sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta) };
+	//double x = Util::getRandomUniform(-1, 1);
+	//double y = Util::getRandomUniform(-1, 1);
+	//double z = Util::getRandomUniform(-1, 1);
+	//double n = sqrt(x*x + y * y + z * z);
+	//return Eigen::Vector3d{ x / n, y / n, z / n };
 }
 
 Eigen::Vector3d Util::getRandomUniformPosition(Eigen::Vector3d envSize) {

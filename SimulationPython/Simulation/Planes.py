@@ -33,5 +33,8 @@ class Planes(AbstractCompartment):
     def contains(self, pos):
         return pos[0] > -self.halfSpacing and pos[0] < self.halfSpacing
 
+    def setParentComp(self, comp):
+        pass
+
     def plot(self, ax):
         pass

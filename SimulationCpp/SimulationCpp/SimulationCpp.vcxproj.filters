@@ -51,6 +51,9 @@
     <ClCompile Include="src\SimulationCpp_wrap.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\CylinderBasic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Abstract3DObject.h">
@@ -90,6 +93,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Export.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CylinderBasic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

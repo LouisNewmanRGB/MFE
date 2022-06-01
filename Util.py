@@ -100,6 +100,16 @@ class Util():
             return scipy.stats.maxwell.cdf(x, loc = 0, scale = (2*D*diffusionTime)**0.5)
         return F
 
+    def getPDF_normal(D, diffusionTime):
+        def f(x):
+            return scipy.stats.norm.pdf(x, loc = 0, scale = (2*D*diffusionTime)**0.5)
+        return f
+
+    def getCDF_normal(D, diffusionTime):
+        def F(x):
+            return 0.5*(1 + scipy.special.erf(x/(4*D*diffusionTime)**0.5))
+        return F
+
     def getPDF_sphere(D, diffusionTime, radius, nTerms, nIter):
         alphaList = Util.genAlphaList(nTerms, nIter, radius)
 

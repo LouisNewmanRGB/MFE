@@ -5,14 +5,15 @@ from SimulationCppResults import SimulationCppResults
 from SimulationCpp import Simulation
 from Util import Util
 
-diffusionTimes = np.array([1, 2, 3] + list(np.linspace(1, 25, 25)*4) )
-print(diffusionTimes)
-nStep = 8
-nPart = int(1e6)
+#diffusionTimes = list(np.arange(1, 50, 2)) + list(np.arange(52, 76, 4))
+diffusionTimes = [10]
+nStep = 26
+nPart = int(308461)
 D = 2
 T2 = np.inf
 radius = 8
-load = True
+load = False
+plotIntermediary = True
 
 if not(load):
     results = np.empty((len(diffusionTimes)), dtype=SimulationCppResults)
@@ -27,39 +28,40 @@ if not(load):
         sim.run()
         results[t] = SimulationCppResults(sim.getResults(), nPart)
         print("Finished sim", t+1)
-    np.save("numpy saves/sphere_signalcpp.npy", results)
+
+    qPoints = np.linspace(0, 0.8, 101)[1:]
+    qVectors = np.array([[q, 0, 0] for q in qPoints])
+
+    RMSEs = np.empty((len(diffusionTimes)))
+    for t in range(len(diffusionTimes)):
+        diffusionTime = diffusionTimes[t]
+        trueSignalPoints = Util.getSignal_sphere_fin(radius, D, diffusionTime, 20, 20, 10)(qPoints)
+        simResults = results[t]
+        simulatedSignal, stdsSample, stdsPopulation = simResults.getSGPSignal(qVectors, includeStd=True)
+        RMSEs[t] = ( np.average((trueSignalPoints - simulatedSignal)**2) )**0.5
+
+        if plotIntermediary:
+            plt.plot(qPoints, trueSignalPoints, color="r")#colors[t], marker=".")
+            plt.errorbar(qPoints, simulatedSignal, stdsSample, fmt=".", color="g")
+            plt.legend(["Theoretical signal", "Simulated signal", "Simulated signal (real part)"])
+            plt.xlabel("q=gamma*G*delta [um-1]")
+            plt.ylabel("Signal attenuation")
+            plt.title("Monte Carlo Simulation of the SGP Signal for Diffusion in an Impermeable Sphere")
+            plt.yscale("log")
+            plt.grid()
+            plt.show()
+    #np.save("numpy saves/sphere_signalcpp24.npy", RMSEs)
 else:
-    np.load("numpy saves/sphere_signalcpp.npy")
-qPoints = np.linspace(0, 0.4, 101)[1:]
-qVectors = np.array([[q, 0, 0] for q in qPoints])
-plotIntermediary = False
+    RMSE8 = np.load("numpy saves/sphere_signalcpp8.npy", allow_pickle=True)
+    RMSE16 = np.load("numpy saves/sphere_signalcpp16.npy", allow_pickle=True)
+    RMSE24 = np.load("numpy saves/sphere_signalcpp24.npy", allow_pickle=True)
 
-
-
-RMSEs = np.empty((len(diffusionTimes)))
-STDs = np.empty((len(diffusionTimes)))
-for t in range(len(diffusionTimes)):
-    diffusionTime = diffusionTimes[t]
-    trueSignalPoints = Util.getSignal_sphere_fin(radius, D, diffusionTime, 20, 20, 10)(qPoints)
-    simResults = results[t]
-    simulatedSignal, stdsSample, stdsPopulation = simResults.getSGPSignal(qVectors, includeStd=True)
-    RMSEs[t] = ( np.average((trueSignalPoints - simulatedSignal)**2) )**0.5
-    #STDs[t] = ( np.std((trueSignalPoints - simulatedSignal)**2) )**0.5 #???????????????????????????????????????????/
-    STDs[t] = (np.average(stdsSample**2))**0.5 #???????????????????????????????????????????
-
-    if plotIntermediary:
-        plt.plot(qPoints, trueSignalPoints, color="r")#colors[t], marker=".")
-        plt.errorbar(qPoints, simulatedSignal, stdsSample, fmt=".", color="g")
-        plt.legend(["Theoretical signal", "Simulated signal", "Simulated signal (real part)"])
-        plt.xlabel("q=gamma*G*delta [um-1]")
-        plt.ylabel("SGP Signal attenuation")
-        plt.title("graphTitle")
-        plt.yscale("log")
-        plt.grid()
-        plt.show()
-
-plt.errorbar(diffusionTimes, RMSEs, STDs, fmt="o")
-plt.ylabel("Diffusion time [ms]")
-plt.xlabel("RMSE between theoretical and simulated SGP signals")
+plt.scatter(diffusionTimes, RMSE8)
+plt.scatter(diffusionTimes, RMSE16)
+#plt.scatter(diffusionTimes, RMSE24)
+plt.xlabel("Diffusion time [ms]")
+plt.ylabel("RMSE")
+plt.legend(["8 steps", "16 steps"])
+plt.title("Theoretical SGP Signal Attenuation for Diffusion in an Impermeable Sphere")
 plt.show()
 

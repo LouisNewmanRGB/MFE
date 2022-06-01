@@ -77,6 +77,9 @@ class Simulation(object):
     def addPlanes(self, T2, diffusivity, spacing):
         return _SimulationCpp.Simulation_addPlanes(self, T2, diffusivity, spacing)
 
+    def addCylinderBasic(self, x, y, T2, diffusivity, permeability, radius):
+        return _SimulationCpp.Simulation_addCylinderBasic(self, x, y, T2, diffusivity, permeability, radius)
+
     def createStartingPositions(self, nPart, insideCompartments):
         return _SimulationCpp.Simulation_createStartingPositions(self, nPart, insideCompartments)
 

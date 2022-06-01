@@ -10,6 +10,7 @@
 #include "Sphere.h"
 #include "Ellipsoid.h"
 #include "Planes.h"
+#include "CylinderBasic.h"
 
 Simulation::Simulation(int nStep, double timeStep, double envT2, double envDiffusivity, double envSizeX, double envSizeY, double envSizeZ)
 	: m_nStep{ nStep },
@@ -39,6 +40,10 @@ void Simulation::addEllipsoid(double x, double y, double z, double T2, double di
 
 void Simulation::addPlanes(double T2, double diffusivity, double spacing) {
 	m_compartments.push_back(std::make_shared<Planes>(Planes{ T2, diffusivity, spacing }));
+}
+
+void Simulation::addCylinderBasic(double x, double y, double T2, double diffusivity, double permeability, double radius) {
+	m_compartments.push_back(std::make_shared<CylinderBasic>(CylinderBasic{ x, y, T2, diffusivity, permeability, radius }));
 }
 
 void Simulation::createStartingPositions(int nPart, bool insideCompartments) {

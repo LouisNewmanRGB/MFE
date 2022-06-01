@@ -40,6 +40,7 @@ public:
 	void addEllipsoid(double x, double y, double z, double T2, double diffusivity, double permeability,
 		double a, double b, double c);
 	void addPlanes(double T2, double diffusivity, double spacing);
+	void addCylinderBasic(double x, double y, double T2, double diffusivity, double permeability, double radius);
 	void createStartingPositions(int nPart, bool insideCompartments);
 	void createStartingPositionsAtPos(int nPart, double x, double y, double z);
 	void createSequenceSGP();

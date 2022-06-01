@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="src\Abstract3DObject.cpp" />
     <ClCompile Include="src\AbstractCompartment.cpp" />
+    <ClCompile Include="src\CylinderBasic.cpp" />
     <ClCompile Include="src\Simulation.cpp" />
     <ClCompile Include="src\Ellipsoid.cpp" />
     <ClCompile Include="src\Environment.cpp" />
@@ -36,6 +37,7 @@
     <ClInclude Include="src\Abstract3DObject.h" />
     <ClInclude Include="src\AbstractCompartment.h" />
     <ClInclude Include="src\AbstractParticle3D.h" />
+    <ClInclude Include="src\CylinderBasic.h" />
     <ClInclude Include="src\Export.h" />
     <ClInclude Include="src\Simulation.h" />
     <ClInclude Include="src\Ellipsoid.h" />

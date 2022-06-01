@@ -4063,6 +4063,75 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_Simulation_addCylinderBasic(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  Simulation *arg1 = (Simulation *) 0 ;
+  double arg2 ;
+  double arg3 ;
+  double arg4 ;
+  double arg5 ;
+  double arg6 ;
+  double arg7 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  double val2 ;
+  int ecode2 = 0 ;
+  double val3 ;
+  int ecode3 = 0 ;
+  double val4 ;
+  int ecode4 = 0 ;
+  double val5 ;
+  int ecode5 = 0 ;
+  double val6 ;
+  int ecode6 = 0 ;
+  double val7 ;
+  int ecode7 = 0 ;
+  PyObject *swig_obj[7] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "Simulation_addCylinderBasic", 7, 7, swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_Simulation, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Simulation_addCylinderBasic" "', argument " "1"" of type '" "Simulation *""'"); 
+  }
+  arg1 = reinterpret_cast< Simulation * >(argp1);
+  ecode2 = SWIG_AsVal_double(swig_obj[1], &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "Simulation_addCylinderBasic" "', argument " "2"" of type '" "double""'");
+  } 
+  arg2 = static_cast< double >(val2);
+  ecode3 = SWIG_AsVal_double(swig_obj[2], &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Simulation_addCylinderBasic" "', argument " "3"" of type '" "double""'");
+  } 
+  arg3 = static_cast< double >(val3);
+  ecode4 = SWIG_AsVal_double(swig_obj[3], &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "Simulation_addCylinderBasic" "', argument " "4"" of type '" "double""'");
+  } 
+  arg4 = static_cast< double >(val4);
+  ecode5 = SWIG_AsVal_double(swig_obj[4], &val5);
+  if (!SWIG_IsOK(ecode5)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode5), "in method '" "Simulation_addCylinderBasic" "', argument " "5"" of type '" "double""'");
+  } 
+  arg5 = static_cast< double >(val5);
+  ecode6 = SWIG_AsVal_double(swig_obj[5], &val6);
+  if (!SWIG_IsOK(ecode6)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "Simulation_addCylinderBasic" "', argument " "6"" of type '" "double""'");
+  } 
+  arg6 = static_cast< double >(val6);
+  ecode7 = SWIG_AsVal_double(swig_obj[6], &val7);
+  if (!SWIG_IsOK(ecode7)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode7), "in method '" "Simulation_addCylinderBasic" "', argument " "7"" of type '" "double""'");
+  } 
+  arg7 = static_cast< double >(val7);
+  (arg1)->addCylinderBasic(arg2,arg3,arg4,arg5,arg6,arg7);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_Simulation_createStartingPositions(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   Simulation *arg1 = (Simulation *) 0 ;
@@ -4493,6 +4562,7 @@ static PyMethodDef SwigMethods[] = {
 	 { "Simulation_addSphere", _wrap_Simulation_addSphere, METH_VARARGS, NULL},
 	 { "Simulation_addEllipsoid", _wrap_Simulation_addEllipsoid, METH_VARARGS, NULL},
 	 { "Simulation_addPlanes", _wrap_Simulation_addPlanes, METH_VARARGS, NULL},
+	 { "Simulation_addCylinderBasic", _wrap_Simulation_addCylinderBasic, METH_VARARGS, NULL},
 	 { "Simulation_createStartingPositions", _wrap_Simulation_createStartingPositions, METH_VARARGS, NULL},
 	 { "Simulation_createStartingPositionsAtPos", _wrap_Simulation_createStartingPositionsAtPos, METH_VARARGS, NULL},
 	 { "Simulation_createSequenceSGP", _wrap_Simulation_createSequenceSGP, METH_O, NULL},

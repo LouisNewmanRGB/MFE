@@ -1,3 +1,4 @@
+#uses the non wrapped cpp version of the simulator
 import numpy as np
 
 data = np.load("./RandomWalkSimulator/results/white_et_dale_cpp2.npy")
@@ -8,14 +9,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats
 
-from SimulationPython.Simulation.Environment import Environment
-from SimulationPython.Simulation.Sphere import Sphere
-from SimulationPython.Simulation.Util import Util
-from SimulationCppResults import SimulationResults2
+from Util import Util
+from SimulationCppResults import SimulationCppResults
 
 #simulation parameters
 diffusionTimes = [12, 18, 24, 30, 36, 42, 48, 54, 60] #[12] for white_et_dale_permeability and white_et_dale_permeability2
-nPart = int(1e3) #1e4 for white_et_dale_permeability 1e5 for white_et_dale_permeability2
+#nPart = int(1e4) #1e4 for white_et_dale_permeability 1e5 for white_et_dale_permeability2
 nucleusFractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] #volume fraction #[0.7] for white_et_dale_permeability2
 TE = 140 #ms
 nStep = 195 #8
@@ -34,15 +33,11 @@ T2C = 23.87 #ms
 T2Extra = 150 #ms
 cellRadius = 5 #um
 
-envSize = 5*cellRadius
-env = Environment(T2Extra, diffusivityExtra, envSize, envSize, envSize)
-cytoplasm = Sphere(0, 0, 0, T2C, diffusivityC, permeabilityCE, cellRadius)
-
-results = np.empty((len(diffusionTimes), len(nucleusFractions)), dtype=SimulationResults2)
+results = np.empty((len(diffusionTimes), len(nucleusFractions)), dtype=SimulationCppResults)
 data = np.load(saveFileName)
 for t in range(len(diffusionTimes)):
     for f in range(len(nucleusFractions)):
-        results[t, f] = SimulationResults2(data[t, f, :, :])
+        results[t, f] = SimulationCppResults(data[t, f, :, :])
 
 nStepMin1 = Util.getMinNStep(TE, permeabilityNC, diffusivityN, diffusivityC)
 print("Minimum number of time steps required:", nStepMin1)
@@ -68,8 +63,8 @@ for t in range(len(diffusionTimes)):
     stdsPopulation = np.empty(len(nucleusFractions))
     for f in range(len(nucleusFractions)):
         signals[f], stdsSample[f], stdsPopulation[f] = (results[t, f]).getFiniteGradientSignalBValue(bValue, diffusionTime, diffusionTime, includeStd=True)
-    plt.errorbar(nucleusFractions, signals, stdsSample, fmt=".")
-plt.title("Simulation of MRI signal in cells with different nuclear volume fractions\n"
+    plt.errorbar(nucleusFractions, signals, stdsSample, fmt="o")
+plt.title("Monte Carlo Simulation of Intracellular Signal\n"
           "T2cytosol = {T2C}ms, T2nucleus = {T2N}ms".format(T2C=T2C, T2N=T2N))
 plt.ylabel("MRI signal attenuation")
 plt.xlabel("Nuclear volume fraction")

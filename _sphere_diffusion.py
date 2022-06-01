@@ -4,7 +4,7 @@ from Validation import Validation
 
 if __name__ == '__main__':
     t0 = time.time()
-    nRuns = 10
+    nRuns = 50
     diffusionTimes = [2, 5, 10] #ms
     totalSteps = int(1e5)
     nSteps = [2, 4, 8, 16, 32, 50, 100, 250, 500, 1000] #dividers of 100 000
@@ -15,6 +15,6 @@ if __name__ == '__main__':
 
     results = Validation.runValidation(nRuns, diffusionTimes, (nSteps, totalSteps), "comparison", "sphere_center", D, T2, parameter=radius)
     print("Total time", time.time() - t0)
-    plotTitle = "Random walk simulation of diffusion in an impermeable sphere for different diffusion times and numbers of steps\n"\
+    plotTitle = "Monte Carlo Simulation of Diffusion in an Impermeable Sphere\n"\
                 "particles x steps = {totalSteps}, {nRuns} run average".format(totalSteps=totalSteps, nRuns=nRuns)
     Validation.distributionPlot(results, plotTitle, plotHist, nRuns, diffusionTimes, (nSteps, totalSteps), "comparison", "sphere_center", D, parameter=radius)
